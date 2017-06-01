@@ -1,12 +1,69 @@
 #### code to run ts correlations
+## follows NC_batch_SST_SSTANOM.R
+
+#### load libraries
 library(raster)
 library(ncdf4)
 library(maps)
 
+
+#### load global objects
 load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData") ## attach turtle citings time-series
 netcdf=list.files("/Volumes/SeaGate/BREP/jplmur",pattern="*jplMURSST41mday_*",full.names = T)#names of netcdffiles
 template_native=raster(netcdf[1])
 e=extent(-140,-108,18,42)
+
+
+#### define functions
+make_png=function(r,name,blanks){ ### does what it says
+  
+  if(blanks=="NA"){
+    png(paste0("/Volumes/SeaGate/BREP/BREP/monthly_plots/",name,"_NA.png"), width=7, height=5, units="in", res=400)
+  }
+  if(blanks=="zeros"){
+    png(paste0("/Volumes/SeaGate/BREP/BREP/monthly_plots/",name,"_zeros.png"), width=7, height=5, units="in", res=400)
+  }
+  
+  par(ps=10) #settings before layout
+  layout(matrix(c(1,2), nrow=2, ncol=1, byrow=TRUE), heights=c(4,1), widths=7)
+  #layout.show(2) # run to see layout; comment out to prevent plotting during .pdf
+  par(cex=1) # layout has the tendency change par()$cex, so this step is important for control
+  
+  par(mar=c(4,4,1,1)) # I usually set my margins before each plot
+  #pal <- colorRampPalette(c("blue", "grey", "red"))
+  pal <- colorRampPalette(c("purple4","blue", "cyan", "yellow", "red"))
+  #pal <- colorRampPalette(c("purple4", "white", "blue"))
+  ncolors <- 100
+  breaks <- seq(-1,1,,ncolors+1)
+  image(r, col=pal(ncolors), breaks=breaks)
+  map("world", add=TRUE, lwd=2)
+  contour(r, add=TRUE, col="black",levels=c(-.75,-.5,.5,.75))
+  box()
+  
+  par(mar=c(4,4,0,1)) # I usually set my margins before each plot
+  levs <- breaks[-1] - diff(breaks)/2
+  image(x=levs, y=1, z=as.matrix(levs), col=pal(ncolors), breaks=breaks, ylab="", xlab="", yaxt="n")
+  if(blanks=="NA"){
+  mtext(paste0("Correlation [R], ",name,", 2003-2016, years with no sightings removed"), side=1, line=2.5)
+  }
+  if(blanks=="zeros"){
+    mtext(paste0("Correlation [R], ",name,", 2003-2016, years with no sightings zeroed"), side=1, line=2.5)
+  }
+  
+  box()
+  
+  dev.off() # closes device
+}
+
+make_raster=function(r,name,blanks){
+  if(blanks=="NA"){
+  writeRaster(r,filename=paste("/Volumes/SeaGate/BREP/BREP/monthly_plots/",name,"_NA.grd",sep=''),overwrite=TRUE)
+  }
+  if(blanks=="zeros"){
+    writeRaster(r,filename=paste("/Volumes/SeaGate/BREP/BREP/monthly_plots/",name,"_zeros.grd",sep=''),overwrite=TRUE)
+  }
+}
+
 
 for(rdss in list.files("/Volumes/SeaGate/BREP/BREP/monthly",pattern="*.rds")){
   name=gsub(".rds","",rdss)
@@ -51,9 +108,11 @@ transposed[14,7674403]=94 #2014
 transposed[15,7674403]=469 #2015
 transposed[16,7674403]=56 #2016
 
+saveRDS(transposed,file=paste0("/Volumes/SeaGate/BREP/BREP/monthly/",name,"_sightings.rds"))
+
 ## blanks
-transposed=transposed[complete.cases(transposed[,7674402]),]
-a=cor(transposed[,7674402],transposed[,1:7674401])
+transposed_NA=transposed[complete.cases(transposed[,7674402]),]
+a=cor(transposed_NA[,7674402],transposed_NA[,1:7674401])
 b=as.data.frame(t(a))
 colnames(b)="Cor"
 b$lon=rds$lon
@@ -61,34 +120,21 @@ b$lat=rds$lat
 coordinates(b)=~lon+lat
 r=rasterize(b,template_native,field="Cor",fun=mean)
 r=crop(r,e)
+make_png(r=r,name=name,blanks="NA")
+make_raster(r=r,name=name,blanks="NA")
 
-make_png=function(r,name){
+## zeros
+transposed_zeros=transposed[complete.cases(transposed[,7674403]),]
+a=cor(transposed_zeros[,7674403],transposed_zeros[,1:7674401])
+b=as.data.frame(t(a))
+colnames(b)="Cor"
+b$lon=rds$lon
+b$lat=rds$lat
+coordinates(b)=~lon+lat
+r=rasterize(b,template_native,field="Cor",fun=mean)
+r=crop(r,e)
+make_png(r=r,name=name,blanks="zeros")
+make_raster(r=r,name=name,blanks="zeros")
 
-png(paste0("/Volumes/SeaGate/BREP/BREP/monthly_plots/",name,".png"), width=7, height=5, units="in", res=400)
-
-par(ps=10) #settings before layout
-layout(matrix(c(1,2), nrow=2, ncol=1, byrow=TRUE), heights=c(4,1), widths=7)
-#layout.show(2) # run to see layout; comment out to prevent plotting during .pdf
-par(cex=1) # layout has the tendency change par()$cex, so this step is important for control
-
-par(mar=c(4,4,1,1)) # I usually set my margins before each plot
-#pal <- colorRampPalette(c("blue", "grey", "red"))
-pal <- colorRampPalette(c("purple4","blue", "cyan", "yellow", "red"))
-#pal <- colorRampPalette(c("purple4", "white", "blue"))
-ncolors <- 100
-breaks <- seq(-1,1,,ncolors+1)
-image(r, col=pal(ncolors), breaks=breaks)
-map("world", add=TRUE, lwd=2)
-contour(r, add=TRUE, col="black",nlevels=3)
-box()
-
-par(mar=c(4,4,0,1)) # I usually set my margins before each plot
-levs <- breaks[-1] - diff(breaks)/2
-image(x=levs, y=1, z=as.matrix(levs), col=pal(ncolors), breaks=breaks, ylab="", xlab="", yaxt="n")
-mtext(paste0("Correlation [R], ",name,", 2003-2016"), side=1, line=2.5)
-
-box()
-
-dev.off() # closes device
 }
 
