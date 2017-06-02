@@ -22,7 +22,8 @@ for(netcdf in list.files("/Volumes/SeaGate/BREP/jplmur")){
 #saveRDS(tmp.df02,"Master_Empty.csv")
 
 output_dir="/Volumes/SeaGate/BREP/jplmur_raster"
-netcdf=list.files("/Volumes/SeaGate/BREP/jplmur",pattern="*jplMURSST41mday_*",full.names = T)#names of netcdffiles
+# netcdf=list.files("/Volumes/SeaGate/BREP/jplmur",pattern="*jplMURSST41mday_*",full.names = T)#names of netcdffiles, completed mean
+netcdf=list.files("/Volumes/SeaGate/BREP/jplmur",pattern="*jplMURSST41anomm_*",full.names = T)
 template_native=raster(netcdf[1])
 #masterDF1=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
 #masterDF2=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
@@ -40,7 +41,8 @@ for(nc in netcdf3){
   ncc=nc
   ncin <- nc_open(ncc)
   print(ncin)
-  dname="sst" # mean
+  #dname="sst" # mean
+  dname="sstAnom" #annom
   print("defining variables")
   lon <- ncvar_get(ncin, "longitude") # define longitude
   nlon <- dim(lon)

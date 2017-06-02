@@ -64,9 +64,9 @@ make_raster=function(r,name,blanks){
   }
 }
 
-
 for(rdss in list.files("/Volumes/SeaGate/BREP/BREP/monthly",pattern="*.rds")){
   name=gsub(".rds","",rdss)
+  print(name)
   rds=readRDS(paste("/Volumes/SeaGate/BREP/BREP/monthly/",rdss,sep=""))
   transposed=as.data.frame(t(rds))
   if(grepl("2002",rownames(transposed)[3])){ ### get rid of 2002 data, only 6 months OTY have data from 2002
@@ -111,6 +111,7 @@ transposed[16,7674403]=56 #2016
 saveRDS(transposed,file=paste0("/Volumes/SeaGate/BREP/BREP/monthly/",name,"_sightings.rds"))
 
 ## blanks
+print(paste0(name," blanks"))
 transposed_NA=transposed[complete.cases(transposed[,7674402]),]
 a=cor(transposed_NA[,7674402],transposed_NA[,1:7674401])
 b=as.data.frame(t(a))
@@ -124,6 +125,7 @@ make_png(r=r,name=name,blanks="NA")
 make_raster(r=r,name=name,blanks="NA")
 
 ## zeros
+print(paste0(name," zeros"))
 transposed_zeros=transposed[complete.cases(transposed[,7674403]),]
 a=cor(transposed_zeros[,7674403],transposed_zeros[,1:7674401])
 b=as.data.frame(t(a))
