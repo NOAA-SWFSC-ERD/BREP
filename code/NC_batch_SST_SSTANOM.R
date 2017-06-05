@@ -25,17 +25,17 @@ output_dir="/Volumes/SeaGate/BREP/jplmur_raster"
 # netcdf=list.files("/Volumes/SeaGate/BREP/jplmur",pattern="*jplMURSST41mday_*",full.names = T)#names of netcdffiles, completed mean
 netcdf=list.files("/Volumes/SeaGate/BREP/jplmur",pattern="*jplMURSST41anomm_*",full.names = T)
 template_native=raster(netcdf[1])
-#masterDF1=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
+masterDF1=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
 #masterDF2=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
-masterDF3=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
+#masterDF3=readRDS("/Volumes/SeaGate/BREP/BREP/Master_Empty.csv")
 
 
-#netcdf1=netcdf[1:58]
+netcdf1=netcdf[1:58]
 #netcdf2=netcdf[58:116]
-netcdf3=netcdf[116:length(netcdf)]
+#etcdf3=netcdf[116:length(netcdf)]
 
 ### extract SST values from each pixel in each timeslice
-for(nc in netcdf3){
+for(nc in netcdf1){
   print(nc)
   #ncc=paste(nc,".nc",sep="")
   ncc=nc
@@ -86,17 +86,17 @@ for(nc in netcdf3){
   #   }
   # }
   for(i in 3:ncol(tmp.df02)){
-  if(!names(tmp.df02)[i] %in% colnames(masterDF3)){
+  if(!names(tmp.df02)[i] %in% colnames(masterDF1)){
     print(names(tmp.df02)[i])
-    masterDF3[,names(tmp.df02)[i]]=tmp.df02[i]
+    masterDF1[,names(tmp.df02)[i]]=tmp.df02[i]
   }
     
   }
 }
 
-#saveRDS(masterDF1,"MasterDF1.csv")
+saveRDS(masterDF1,"MasterDF1.csv")
 #saveRDS(masterDF2,"MasterDF2.csv")
-saveRDS(masterDF3,"MasterDF3.csv")
+#saveRDS(masterDF3,"MasterDF3.csv")
 
 
 ### merge RDS files into master list, seperate by months?
@@ -131,13 +131,15 @@ for(month in month_list){ ### first data frame only
         #paste0("df_",month)[,names(df)[i]]=df[i]
       }
     }
-  assign(paste0("sst",month,"mean"),masterDF_blank2)
+  #assign(paste0("sst",month,"mean"),masterDF_blank2)
+  assign(paste0("sst",month,"anom"),masterDF_blank2)
 }
 
 
 for(month in month_list){ ### second frame
   print(month)
-  masterDF_blank2=get(paste0("sst",month,"mean"))
+  #masterDF_blank2=get(paste0("sst",month,"mean"))
+  masterDF_blank2=get(paste0("sst",month,"anom"))
   for(i in 3:ncol(masterDF2)){
     if(grepl(month,colnames(masterDF2)[i])){
       print(colnames(masterDF2)[i])
@@ -145,7 +147,8 @@ for(month in month_list){ ### second frame
       #paste0("df_",month)[,names(df)[i]]=df[i]
     }
   }
-  assign(paste0("sst",month,"mean"),masterDF_blank2)
+  #assign(paste0("sst",month,"mean"),masterDF_blank2)
+  assign(paste0("sst",month,"anom"),masterDF_blank2)
 }
 
 #### write out the data frames as rds files because shit keeps falling apart
@@ -155,11 +158,13 @@ for(df in dfs){
   print(df)
 }
 
-rm(masterDF1,masterDF2,masterDF) ## get rid of extra objects so hopefully r doesn't fall apart
+#rm(masterDF1,masterDF2,masterDF) ## get rid of extra objects so hopefully r doesn't fall apart
+rm(masterDF2,masterDF)
 
 for(month in month_list){ ### third data frame
   print(month)
-  masterDF_blank2=get(paste0("sst",month,"mean"))
+  #masterDF_blank2=get(paste0("sst",month,"mean"))
+  masterDF_blank2=get(paste0("sst",month,"anom"))
   for(i in 3:ncol(masterDF3)){
     if(grepl(month,colnames(masterDF3)[i])){
       print(colnames(masterDF3)[i])
@@ -167,7 +172,8 @@ for(month in month_list){ ### third data frame
       #paste0("df_",month)[,names(df)[i]]=df[i]
     }
   }
-  assign(paste0("sst",month,"mean"),masterDF_blank2)
+  #assign(paste0("sst",month,"mean"),masterDF_blank2)
+  assign(paste0("sst",month,"anom"),masterDF_blank2)
 }
 
 #### write out the data frames as rds files with full data attached
