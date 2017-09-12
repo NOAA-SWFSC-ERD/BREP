@@ -131,8 +131,9 @@ wb2_df=as.data.frame(fortify(wb2,region="id"))
 plot(sum_rasJFMAM)
 plot(wb1,add=T)
 plot(wb2,add=T,border="blue")
+#####
 
-## making nice figures
+##### making nice figures ####
 test_spdf <- as(sum_rasJFMAM, "SpatialPixelsDataFrame")
 test_df <- as.data.frame(test_spdf)
 test_df$layer=as.factor(test_df$layer)
@@ -141,20 +142,60 @@ colnames(test_df) <- c("value", "x", "y")
 map.US <- map_data(map="state")
 map.world = map_data(map="world")
 
-pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/WB_JFMAM2.pdf",7,7)
+pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/WB_JFMAM.pdf",7,7)
 
 map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
 map=map+geom_map(data=map.US,map=map.US,aes(map_id=region,x=long,y=lat,fill="grey"),color="black")+coord_cartesian()
 map=map+geom_raster(data=test_df,aes(x=x,y=y,group=factor(value),fill=factor(value)))+coord_cartesian()
 map=map+geom_polygon(data=wb1_df,aes(long,lat,color="wb1",fill="wb1"),size=1.2)+geom_text(data=wb1_df,aes(long[1],lat[1],label="WB1"),nudge_x = .8,nudge_y = .4,size=2.5)+coord_cartesian()
-map=map+geom_polygon(data=wb2_df,aes(long,lat,color="wb2",fill="wb2"),size=1.2)+geom_text(data=wb2_df,aes(long[1],lat[1],label="WB2"),nudge_x = 1.8,nudge_y = 1,size=2.5)+coord_cartesian()
+map=map+geom_polygon(data=wb2_df,aes(long,lat,color="wb2",fill="wb2"),size=1.2)+geom_text(data=wb2_df,aes(long[1],lat[1],label="WB2"),nudge_x = 1.82,nudge_y = 1,size=2.5)+coord_cartesian()
 map=map+scale_fill_manual(breaks=c("0","1","2","3","4","5"),values=c("wb2"=NA,"wb1"=NA,"world"="black","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3","4"="darkorange3","5"="cornflowerblue"))+scale_color_manual(breaks="",values=c("wb2"="dodgerblue4","wb1"="black"))
 map2=map+xlim(-140,-107)
-map2=map2+ylim(17,43)+theme(panel.background = element_blank())+ theme(panel.border = element_rect(colour = "black",fill=NA))+ggtitle("Early warning SST boxes based on Jan-May conditions")+theme(plot.title = element_text(size = 10, face = "bold"))
-map2=map2+guides(fill=guide_legend(title="Persistence (days)"))+theme(legend.title = element_text(size=8),legend.position=c(.9,.9),legend.justification = c(.9,.9))+theme(legend.text=element_text(size=8))
+map2=map2+ylim(17,43)+theme(panel.background = element_blank())+ theme(panel.border = element_rect(colour = "black",fill=NA))+ggtitle("Early warning boxes based on Jan-May SST conditions")+theme(plot.title = element_text(size = 10, face = "bold"))
+map2=map2+guides(fill=guide_legend(title="Persistence (months)"))+theme(legend.title = element_text(size=8),legend.position=c(.9,.9),legend.justification = c(.9,.9))+theme(legend.text=element_text(size=8))
 map2
 dev.off()
+#####
 
+###### 2. observation box ####
+ob1_coords=matrix(c(-124.5,23,  ## define SST box
+                    -124.5,24.25,
+                    -122.5,24.25,
+                    -122.5,23,
+                    -124.5,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(ob1_coords)
+ps=Polygons(list(p),1)
+ob1 = SpatialPolygons(list(ps))
+proj4string(ob1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+ob1_df=as.data.frame(fortify(ob1,region="id"))
+
+plot(sum_rasMJJ)
+plot(ob1,add=T)
+
+##### making nice figures ####
+test_spdf <- as(sum_rasMJJ, "SpatialPixelsDataFrame")
+test_df <- as.data.frame(test_spdf)
+test_df$layer=as.factor(test_df$layer)
+colnames(test_df) <- c("value", "x", "y")
+
+map.US <- map_data(map="state")
+map.world = map_data(map="world")
+
+pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/OB_MJJ.pdf",7,7)
+
+map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
+map=map+geom_map(data=map.US,map=map.US,aes(map_id=region,x=long,y=lat,fill="grey"),color="black")+coord_cartesian()
+map=map+geom_raster(data=test_df,aes(x=x,y=y,group=factor(value),fill=factor(value)))+coord_cartesian()
+map=map+geom_polygon(data=ob1_df,aes(long,lat,color="ob1",fill="ob1"),size=1.2)+geom_text(data=ob1_df,aes(long[1],lat[1],label="OB1"),nudge_x = .8,nudge_y = .4,size=2.5)+coord_cartesian()
+map=map+scale_fill_manual(breaks=c("0","1","2"),values=c("ob1"=NA,"world"="black","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3"))+scale_color_manual(breaks="",values=c("ob1"="black"))
+map2=map+xlim(-140,-107)
+map2=map2+ylim(17,43)+theme(panel.background = element_blank())+ theme(panel.border = element_rect(colour = "black",fill=NA))+ggtitle("Observation box based on May-July SST conditions")+theme(plot.title = element_text(size = 10, face = "bold"))
+map2=map2+guides(fill=guide_legend(title="Persistence (months)"))+theme(legend.title = element_text(size=8),legend.position=c(.9,.9),legend.justification = c(.9,.9))+theme(legend.text=element_text(size=8))
+map2
+dev.off()
+#####
 
 #####
 
