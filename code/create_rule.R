@@ -142,7 +142,8 @@ colnames(test_df) <- c("value", "x", "y")
 map.US <- map_data(map="state")
 map.world = map_data(map="world")
 
-pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/WB_JFMAM.pdf",7,7)
+#pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/WB_JFMAM.pdf",7,7)
+png("/Volumes/SeaGate/BREP/BREP/SST_boxes/WB_JFMAM.png",600,600)
 
 map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
 map=map+geom_map(data=map.US,map=map.US,aes(map_id=region,x=long,y=lat,fill="grey"),color="black")+coord_cartesian()
@@ -183,7 +184,8 @@ colnames(test_df) <- c("value", "x", "y")
 map.US <- map_data(map="state")
 map.world = map_data(map="world")
 
-pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/OB_MJJ.pdf",7,7)
+#pdf("/Volumes/SeaGate/BREP/BREP/SST_boxes/OB_MJJ.pdf",7,7)
+png("/Volumes/SeaGate/BREP/BREP/SST_boxes/OB_MJJ.png",600,600)
 
 map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
 map=map+geom_map(data=map.US,map=map.US,aes(map_id=region,x=long,y=lat,fill="grey"),color="black")+coord_cartesian()
