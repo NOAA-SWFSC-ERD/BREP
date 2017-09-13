@@ -201,55 +201,64 @@ dev.off()
 
 #####
 
-# month_list=unlist(list("-01-","-02-","-03-","-04-","-05-","-06-","-07-","-08-","-09-","-10-","-11-","-12-"))
-#  
-# calculate_cor=function(month_list,latMin,latMax,lonMin,lonMax,boxID){  
-#   DF=data.frame(month=character(),
-#                 cor_blanks=double(),
-#                 cor_zeros=double(),
-#                 stringsAsFactors = F)
-# for(i in 1:12){
-# month=month_list[i]
-# print(month)
-# a=readRDS(paste0(getwd(),"/monthly/sst",month,"mean_sightings.rds"))
-# 
-# if(grepl("2017-01-16",rownames(a)[length(rownames(a))])){
-#   a=a[1:(nrow(a)-1),]
-# }
-# 
-# a3=as.data.frame(t(a))
-# a4=a3[a3$lat>latMin & a3$lat<latMax,]
-# a5=a4[a4$lon> lonMin & a4$lon< lonMax,]
-# 
-# month2=gsub("-","",month)
-# 
-# a6=as.data.frame(t(a5))
-# a6$spatial_average=rowMeans(a6,na.rm = T)
-# a7=as.data.frame(a6[,ncol(a6)])
-# rownames(a7)=rownames(a6)
-# colnames(a7)=paste0(month2,"_mean")
-# a7$sightings_blank=a[,ncol(a)-1]
-# a7$sightings_zero=a[,ncol(a)]
-# a7=a7[3:nrow(a7),]
-# 
-# nas=a7[!is.na(a7$sightings_blank),]
-# cor(nas[,1],nas$sightings_blank)
-# 
-# zeros=a7[!is.na(a7$sightings_zero),]
-# cor(zeros[,1],zeros$sightings_zero)
-# 
-# DF[i,1]=month2
-# DF[i,2]=cor(nas[,1],nas$sightings_blank)
-# DF[i,3]=cor(zeros[,1],zeros$sightings_zero)
-# }
-#   colnames(DF)[2]=paste0("cor_blanks",boxID)
-#   colnames(DF)[3]=paste0("cor_zeros",boxID)
-#   return(DF)
-# }
+month_list=unlist(list("-01-","-02-","-03-","-04-","-05-","-06-","-07-","-08-","-09-","-10-","-11-","-12-"))
+
+calculate_cor=function(month_list,latMin,latMax,lonMin,lonMax,boxID){
+  DF=data.frame(month=character(),
+                cor_blanks=double(),
+                cor_zeros=double(),
+                stringsAsFactors = F)
+for(i in 1:12){
+month=month_list[i]
+print(month)
+a=readRDS(paste0(getwd(),"/sst",month,"mean_sightings.rds"))
+
+if(grepl("2017-01-16",rownames(a)[length(rownames(a))])){
+  a=a[1:(nrow(a)-1),]
+}
+
+a3=as.data.frame(t(a))
+a4=a3[a3$lat>latMin & a3$lat<latMax,]
+a5=a4[a4$lon> lonMin & a4$lon< lonMax,]
+
+month2=gsub("-","",month)
+
+a6=as.data.frame(t(a5))
+a6$spatial_average=rowMeans(a6,na.rm = T)
+a7=as.data.frame(a6[,ncol(a6)])
+rownames(a7)=rownames(a6)
+colnames(a7)=paste0(month2,"_mean")
+a7$sightings_blank=a[,ncol(a)-1]
+a7$sightings_zero=a[,ncol(a)]
+a7=a7[3:nrow(a7),]
+
+nas=a7[!is.na(a7$sightings_blank),]
+cor(nas[,1],nas$sightings_blank)
+
+zeros=a7[!is.na(a7$sightings_zero),]
+cor(zeros[,1],zeros$sightings_zero)
+
+DF[i,1]=month2
+DF[i,2]=cor(nas[,1],nas$sightings_blank)
+DF[i,3]=cor(zeros[,1],zeros$sightings_zero)
+}
+  colnames(DF)[2]=paste0("cor_blanks",boxID)
+  colnames(DF)[3]=paste0("cor_zeros",boxID)
+  return(DF)
+}
+setwd("/Volumes/SeaGate/BREP/BREP/monthly")
+
 # JFMA1=calculate_cor(month_list = month_list,latMin = 23, latMax = 30,lonMin = -120,lonMax = -118,boxID = "JFMA1")
 # JFMA2=calculate_cor(month_list = month_list,latMin = 35, latMax = 38,lonMin = -134,lonMax = -132,boxID = "JFMA2")
 # JAS1=calculate_cor(month_list = month_list,latMin = 23, latMax = 25,lonMin = -135,lonMax = -123,boxID = "JAS1")
-# 
+
+wb1_cor=calculate_cor(month_list = month_list,latMin = 23, latMax = 27,lonMin = -120,lonMax = -118.5,boxID = "wb1")
+wb2_cor=calculate_cor(month_list = month_list,latMin = 24, latMax = 26.5,lonMin = -119.5,lonMax = -118.25,boxID = "wb2")
+ob1_cor=calculate_cor(month_list = month_list,latMin = 23, latMax = 24.25,lonMin = -124.5,lonMax = -122.5,boxID = "ob1")
+
 # df_full=cbind(JFMA1,JFMA2,JAS1)
-# write.csv(df_full,"/Volumes/SeaGate/BREP/BREP/schematics/3box_corr.csv")
-# 
+#write.csv(df_full,"/Volumes/SeaGate/BREP/BREP/schematics/3box_corr.csv")
+
+df_full=cbind(wb1_cor,wb2_cor,ob1_cor)
+write.csv(df_full,"/Volumes/SeaGate/BREP/BREP/schematics/wb_ob_corr.csv")
+
