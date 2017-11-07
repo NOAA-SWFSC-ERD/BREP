@@ -20,3 +20,7 @@ create_rule.R
 # Script 5
 ENSO.R
   correlated sighting data w ENSO index for comparison w SST box
+  
+# Script 6
+test_rules.R
+  developes moderate and conservative rules for best (most correlated) indicator in each month
