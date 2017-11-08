@@ -20,7 +20,8 @@ library(dplyr)
 library(reshape)
 library(plyr)
 
-##### read in indicator dfs ####
+##### read in indicator dfs 
+###### 
 df_list=list.files("/Volumes/SeaGate/BREP/BREP/set_in_indicators",pattern=".csv$",full.names = T)
 
 for(df in df_list){
@@ -49,6 +50,10 @@ write.csv(jas_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/jas_df.csv")
 write.csv(wb1_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/wb1_df.csv")
 write.csv(enso_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/enso_df.csv")
 
+###### 
+
+###### populating data frame with indicators and thresholds
+###### 
 df_empty=data.frame(matrix(NA,nrow=12,ncol=14))
 colnames(df_empty)=c("2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016")
 rownames(df_empty)=c("January","February","March","April","May","June","July","August","September","October","November","December")
@@ -100,8 +105,10 @@ df_empty[16]=df_turtle[9] ###indicator values should be based on turtle years on
 df_empty[17]=df_turtle[10] ###indicator values should be based on turtle years only
 
 write.csv(df_empty,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/best_indicator_all_years.csv")
+###### 
 
-##### testing out rules #####
+##### testing out rules --------> just testing, ignore this section
+###### 
 ## conservative -------------------------------------> gonna have to handle ENSO separately
 conservative=df_empty
 conservative[1:14]=conservative[1:14]-conservative[,16]
@@ -165,13 +172,11 @@ for(i in 1:12){
   }
   
 }
+###### 
 
-
-
-
-
-#### making tables to put in schematics ######
-###### ---------------> orignal rules, min and mean, all turtle years #####
+#### making tables to put in schematics
+###### 
+###### ---------------> orignal rules, min and mean, all turtle years 
 df_turtle=df_empty[,c(1,3,4,11:17)]
 df_turtle[9]=apply(df_turtle[,1:7],1,min)
 df_turtle[10]=apply(df_turtle[,1:7],1,mean)
@@ -197,13 +202,30 @@ for(i in 1:11){
 empty=empty[2:nrow(empty),]
 empty["Closure freq",]=NA
 for(i in 1:14){
-  a=sum(empty[,i]=="Closed")
+  a=as.data.frame(table(empty[,i]))%>%.[.$Var1=="Closed",]%>%.[1,2]
   print(a)
   empty[12,i]=a
 }
+empty[12,c(1:14)][is.na(empty[12,c(1:14)])]<-0
 
+empty["Turtle freq",]=NA
+empty[13,1]=10 #2003
+empty[13,2]=0 #2004
+empty[13,3]=1 #2005
+empty[13,4]=34 #2006
+empty[13,5]=0 #2007
+empty[13,6]=0 #2008
+empty[13,7]=0 #2009
+empty[13,8]=0 #2010
+empty[13,9]=0 #2011
+empty[13,10]=0 #2012
+empty[13,11]=1 #2013
+empty[13,12]=94 #2014
+empty[13,13]=469 #2015
+empty[13,14]=56 #2016
 
-conservative_w2015=empty[2:nrow(empty),]
+conservative_w2015=empty
+write_csv(conservative_w2015,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/conservative_w2015.csv")
 ## moderative -------------------------------------> gonna have to handle ENSO separately
 moderative=df_empty
 moderative[1:14]=moderative[1:14]-moderative[,17]
@@ -218,7 +240,75 @@ for(i in 1:11){
   }
   
 }
-moderate_w2015=empty[2:nrow(empty),]
+
+empty=empty[2:nrow(empty),]
+empty["Closure freq",]=NA
+for(i in 1:14){
+  a=as.data.frame(table(empty[,i]))%>%.[.$Var1=="Closed",]%>%.[1,2]
+  print(a)
+  empty[12,i]=a
+}
+empty[12,c(1:14)][is.na(empty[12,c(1:14)])]<-0
+
+empty["Turtle freq",]=NA
+empty[13,1]=10 #2003
+empty[13,2]=0 #2004
+empty[13,3]=1 #2005
+empty[13,4]=34 #2006
+empty[13,5]=0 #2007
+empty[13,6]=0 #2008
+empty[13,7]=0 #2009
+empty[13,8]=0 #2010
+empty[13,9]=0 #2011
+empty[13,10]=0 #2012
+empty[13,11]=1 #2013
+empty[13,12]=94 #2014
+empty[13,13]=469 #2015
+empty[13,14]=56 #2016
+
+moderate_w2015=empty
+write_csv(moderate_w2015,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/moderate_w2015.csv")
+###### 
+
+#### plotting relationships
+######
+cons=as.data.frame(t(conservative_w2015))
+colnames(cons)[12]="Closure_freq"
+colnames(cons)[13]="Turtle_freq"
+cons=cons[1:14,]
+cons$Closure_freq=as.numeric(levels(cons$Closure_freq))[cons$Closure_freq]
+cons$Turtle_freq=as.numeric(levels(cons$Turtle_freq))[cons$Turtle_freq]
+chart=ggplot()+geom_smooth(data=cons,aes(x=Turtle_freq,y=Closure_freq),method='lm',se=F)
+chart=chart+geom_point(data=cons,aes(x=Turtle_freq,y=Closure_freq))
+chart=chart+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(text = element_text(size=7))
+chart=chart+labs(x="Annual turtle frequency")+labs(y="Number of months closed each year")
+chart=chart+ggtitle("Relationship between turtle and closure frequency: Conservative Threshold")
+chart=chart+annotate(x=400,y=14,label=paste("R=",round(cor(cons$Turtle_freq,cons$Closure_freq),2)),geom = "text",size=2)
+
+pdf("/Volumes/SeaGate/BREP/BREP/set_in_indicators/turt_closure_cor_cons.pdf",width=6,height=6,pointsize=50)
+chart
+dev.off()
+
+
+cons=as.data.frame(t(moderate_w2015))
+colnames(cons)[12]="Closure_freq"
+colnames(cons)[13]="Turtle_freq"
+cons=cons[1:14,]
+cons$Closure_freq=as.numeric(levels(cons$Closure_freq))[cons$Closure_freq]
+cons$Turtle_freq=as.numeric(levels(cons$Turtle_freq))[cons$Turtle_freq]
+chart=ggplot()+geom_smooth(data=cons,aes(x=Turtle_freq,y=Closure_freq),method='lm',se=F)
+chart=chart+geom_point(data=cons,aes(x=Turtle_freq,y=Closure_freq))
+chart=chart+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(text = element_text(size=7))
+chart=chart+labs(x="Annual turtle frequency")+labs(y="Number of months closed each year")
+chart=chart+ggtitle("Relationship between turtle and closure frequency: Moderate Threshold")
+chart=chart+annotate(x=400,y=14,label=paste("R=",round(cor(cons$Turtle_freq,cons$Closure_freq),2)),geom = "text",size=2)
+
+
+pdf("/Volumes/SeaGate/BREP/BREP/set_in_indicators/turt_closure_cor_mod.pdf",width=6,height=6,pointsize=50)
+chart
+dev.off()
+
+
 
 ###### ---------------> new rules, min and mean, all turtle years w.o. 2015 ##### NEVERMIND, THESE GET WORSE ####
 df_turtle2=df_turtle[,c(1:5,7:ncol(df_turtle))]
