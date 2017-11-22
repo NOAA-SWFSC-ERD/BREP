@@ -309,6 +309,152 @@ chart
 dev.off()
 
 
+############## ----------------- >>>>>>>>>>>>>>>>>>>>> new work 11/21/18, adding in a lenient threshold (+SD) to test against moderate threshold
+df_empty=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/best_indicator_all_years.csv")
+
+df_turtle=df_empty[,c(2,4,5,12:18)] ## getting only years that have turtles
+df_turtle[11]=apply(df_turtle[,1:7],1,sd)
+colnames(df_turtle)[11]="sd"
+df_turtle[12]=df_turtle$moderate+df_turtle$sd
+df_turtle[13]=1/2*df_turtle[11] ## half an sd
+df_turtle[14]=df_turtle$moderate+df_turtle$sd.1
+
+df_empty[19]=NA
+colnames(df_empty)[19]="lenient"
+df_empty[19]=df_turtle[12] ### lenient = mean (moderature) + 1 SD
+
+df_empty[20]=NA
+colnames(df_empty)[20]="mod_lenient"
+df_empty[20]=df_turtle[14] ### lenient = mean (moderature) + 1/2 SD
+
+
+## lenient -------------------------------------> gonna have to handle ENSO separately
+lenient=df_empty[2:ncol(df_empty)]
+lenient[1:14]=lenient[1:14]-lenient[,18]
+empty=lenient
+
+for(i in 1:11){
+  for(ii in 1:14){
+    print(lenient[i,ii])
+    
+    if(lenient[i,ii]>=0){empty[i+1,ii]=("Closed")}
+    if(lenient[i,ii]<0){empty[i+1,ii]=("Open")}
+  }
+  
+}
+
+empty=empty[2:nrow(empty),]
+empty["Closure freq",]=NA
+for(i in 1:14){
+  a=as.data.frame(table(empty[,i]))%>%.[.$Var1=="Closed",]%>%.[1,2]
+  print(a)
+  empty[12,i]=a
+}
+empty[12,c(1:14)][is.na(empty[12,c(1:14)])]<-0
+
+empty["Turtle freq",]=NA
+empty[13,1]=10 #2003
+empty[13,2]=0 #2004
+empty[13,3]=1 #2005
+empty[13,4]=34 #2006
+empty[13,5]=0 #2007
+empty[13,6]=0 #2008
+empty[13,7]=0 #2009
+empty[13,8]=0 #2010
+empty[13,9]=0 #2011
+empty[13,10]=0 #2012
+empty[13,11]=1 #2013
+empty[13,12]=94 #2014
+empty[13,13]=469 #2015
+empty[13,14]=56 #2016
+
+lenient_w2015=empty
+write_csv(lenient_w2015,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/lenient_w2015.csv")
+
+
+## mod_lenient -------------------------------------> gonna have to handle ENSO separately 
+mod_lenient=df_empty[2:ncol(df_empty)]
+mod_lenient[1:14]=mod_lenient[1:14]-mod_lenient[,19]
+empty=mod_lenient
+
+for(i in 1:11){
+  for(ii in 1:14){
+    print(mod_lenient[i,ii])
+    
+    if(mod_lenient[i,ii]>=0){empty[i+1,ii]=("Closed")}
+    if(mod_lenient[i,ii]<0){empty[i+1,ii]=("Open")}
+  }
+  
+}
+
+empty=empty[2:nrow(empty),]
+empty["Closure freq",]=NA
+for(i in 1:14){
+  a=as.data.frame(table(empty[,i]))%>%.[.$Var1=="Closed",]%>%.[1,2]
+  print(a)
+  empty[12,i]=a
+}
+empty[12,c(1:14)][is.na(empty[12,c(1:14)])]<-0
+
+empty["Turtle freq",]=NA
+empty[13,1]=10 #2003
+empty[13,2]=0 #2004
+empty[13,3]=1 #2005
+empty[13,4]=34 #2006
+empty[13,5]=0 #2007
+empty[13,6]=0 #2008
+empty[13,7]=0 #2009
+empty[13,8]=0 #2010
+empty[13,9]=0 #2011
+empty[13,10]=0 #2012
+empty[13,11]=1 #2013
+empty[13,12]=94 #2014
+empty[13,13]=469 #2015
+empty[13,14]=56 #2016
+
+mod_lenient_w2015=empty
+write_csv(mod_lenient_w2015,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_w2015.csv")
+
+
+#### plotting relationships
+######
+cons=as.data.frame(t(mod_lenient_w2015))
+colnames(cons)[12]="Closure_freq"
+colnames(cons)[13]="Turtle_freq"
+cons=cons[1:14,]
+cons$Closure_freq=as.numeric(levels(cons$Closure_freq))[cons$Closure_freq]
+cons$Turtle_freq=as.numeric(levels(cons$Turtle_freq))[cons$Turtle_freq]
+chart=ggplot()+geom_smooth(data=cons,aes(x=Turtle_freq,y=Closure_freq),method='lm',se=F)
+chart=chart+geom_point(data=cons,aes(x=Turtle_freq,y=Closure_freq))
+chart=chart+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(text = element_text(size=7))
+chart=chart+labs(x="Annual turtle frequency")+labs(y="Number of months closed each year")
+chart=chart+ggtitle("Relationship between turtle and closure frequency: Mod_lenient Threshold")
+chart=chart+annotate(x=400,y=14,label=paste("R=",round(cor(cons$Turtle_freq,cons$Closure_freq),2)),geom = "text",size=2)
+
+pdf("/Volumes/SeaGate/BREP/BREP/set_in_indicators/turt_closure_cor_mod_len.pdf",width=6,height=6,pointsize=50)
+chart
+dev.off()
+
+
+cons=as.data.frame(t(lenient_w2015))
+colnames(cons)[12]="Closure_freq"
+colnames(cons)[13]="Turtle_freq"
+cons=cons[1:14,]
+cons$Closure_freq=as.numeric(levels(cons$Closure_freq))[cons$Closure_freq]
+cons$Turtle_freq=as.numeric(levels(cons$Turtle_freq))[cons$Turtle_freq]
+chart=ggplot()+geom_smooth(data=cons,aes(x=Turtle_freq,y=Closure_freq),method='lm',se=F)
+chart=chart+geom_point(data=cons,aes(x=Turtle_freq,y=Closure_freq))
+chart=chart+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(text = element_text(size=7))
+chart=chart+labs(x="Annual turtle frequency")+labs(y="Number of months closed each year")
+chart=chart+ggtitle("Relationship between turtle and closure frequency: Lenient Threshold")
+chart=chart+annotate(x=400,y=14,label=paste("R=",round(cor(cons$Turtle_freq,cons$Closure_freq),2)),geom = "text",size=2)
+
+
+pdf("/Volumes/SeaGate/BREP/BREP/set_in_indicators/turt_closure_cor_len.pdf",width=6,height=6,pointsize=50)
+chart
+dev.off()
+
+
 
 ###### ---------------> new rules, min and mean, all turtle years w.o. 2015 ##### NEVERMIND, THESE GET WORSE ####
 df_turtle2=df_turtle[,c(1:5,7:ncol(df_turtle))]
