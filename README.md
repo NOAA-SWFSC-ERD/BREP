@@ -23,4 +23,8 @@ ENSO.R
   
 # Script 6
 test_rules.R
-  developes moderate and conservative rules for best (most correlated) indicator in each month
+  developes moderate and conservative rules for best (most correlated) indicator in each month  
+  
+# Script 7
+test_rules_hindcast.R
+  script to test moderate and conservative rules to see how often they would have been applied historically
