@@ -25,6 +25,10 @@ ENSO.R
 test_rules.R
   developes moderate and conservative rules for best (most correlated) indicator in each month  
   
+# Scipt 6.1
+SST_curl.R
+  script to download and process historical SST data for bycatch event reanalysis
+  
 # Script 7
 test_rules_hindcast.R
   script to test moderate and conservative rules to see how often they would have been applied historically
