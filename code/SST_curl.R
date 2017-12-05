@@ -35,8 +35,8 @@ set=set[,c(1,2,3,8:15,51:54)]
 
 turts_alldata2=left_join(turts,set,by="TripNumber_Set")
 
-bycatch_dates=turts_alldata2$dt ### final dates
-
+bycatch_dates=turts_alldata2$dt ### final dates ##### CRAP, supposed to be the preceeding month!!!
+bycatch_dates=c("1992-12-16", "1998-07-16", "1998-07-16", "1998-07-16", "1992-03-16" ,"1992-12-16" ,"2006-09-16" ,"1997-07-16" ,"1997-09-16", "2001-07-16" ,"1993-07-16" ,"1993-07-16" ,"1992-12-16" ,"1992-06-16","1997-12-16" ,"1997-07-16", "1992-05-16") ## DOING BY HAND
 
 #####--- step 2. set up download for monthly ERDDAP data to cover dates ####
 
@@ -54,7 +54,7 @@ counter=0
 time=3
 while (i < length(bycatch_dates)){
   print(bycatch_dates[i])
-  filenm<-paste("/Volumes/SeaGate/BREP/erdPH2sstamday/erdPH2sstamday_",bycatch_dates[i],".nc",sep="")
+  filenm<-paste("/Volumes/SeaGate/BREP/erdPH2sstamday/erdPH2sstamday_new_",bycatch_dates[i],".nc",sep="")
   url<-paste("http://coastwatch.pfeg.noaa.gov/erddap/griddap/erdPH2sstamday.nc?sea_surface_temperature[(",bycatch_dates[i],"):1:(",bycatch_dates[i],")][(60):1:(10)][(-180):1:(-100)]",sep="") ##check product name!!
   f = CFILE(filenm,mode="wb")
   curlPerform(url=url,writedata=f@ref) 
@@ -73,7 +73,7 @@ while (i < length(bycatch_dates)){
 
 #####--- step 3. convert netcdfs to rasters ####
 output_dir="/Volumes/SeaGate/BREP/erdPH2sstamday_raster"
-netcdf=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday",full.names = T)
+netcdf=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday",pattern="new",full.names = T)
 template_native=raster(netcdf[1])
 
 ### extract SST values from each pixel in each timeslice
@@ -121,11 +121,11 @@ for(nc in netcdf){
     print(n)
     a=strsplit(n,"-") 
     b=paste0(a[[1]][1],"-",a[[1]][2],"-16")
-    path=paste(output_dir,"/mean_",b,".grd",sep="")
+    path=paste(output_dir,"/new_mean_",b,".grd",sep="")
+    print(path)
     if(file.exists(path)==FALSE){
       r=rasterize(tmp.df02,template_native,field=n,fun=mean) # points to raster
-      print(paste(output_dir,"/mean_",b,".grd",sep=""))
-      writeRaster(r,paste(output_dir,"/mean_",b,sep=""),overwrite=TRUE)
+      writeRaster(r,paste(output_dir,"/new_mean_",b,sep=""),overwrite=TRUE)
     }
   }
   }
