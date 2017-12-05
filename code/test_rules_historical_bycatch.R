@@ -67,8 +67,8 @@ ob1_df=as.data.frame(fortify(ob1,region="id"))
 
 
 ###### prepare master data frame and extract ######
-df=data.frame(matrix(NA,ncol=10,nrow=11))
-colnames(df)=c("indicator_date","indicator_month","bycatch_event_date","JAS","WB1","OB1","conservative","moderate","lenient","mod_lenient")
+df=data.frame(matrix(NA,ncol=11,nrow=11))
+colnames(df)=c("indicator_date","indicator_month","bycatch_event_date","n.turts","JAS","WB1","OB1","conservative","moderate","lenient","mod_lenient")
 df$indicator_date=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new") %>% grep(".grd",.,value=T) %>% gsub("new_mean_","",.)%>% gsub(".grd","",.)
 df$indicator_month=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new") %>% grep(".grd",.,value=T) %>% gsub("new_mean_","",.)%>% gsub(".grd","",.) %>% substr(.,6,7)
 df$JAS=raster::extract(ras_list,jas,fun=mean,na.rm=T,df=T) %>% gather() %>% .[2:nrow(.),] %>% .[,2]
@@ -85,7 +85,46 @@ set$dt=as.Date(set$dt)
 set=set[,c(1,2,3,8:15,51:54)]
 turts_alldata2=left_join(turts,set,by="TripNumber_Set")
 bycatch_dates=turts_alldata2$dt %>% sort() ### final dates ##### CRAP, supposed to be the preceeding month!!!
-by_dates=bycatch_dates[1,2,3,]
-df$bycatch_event_date=bycatch_dates
+n_turts=c(1,1,1,3,2,2,1,1,3,1,1)
+df$n.turts=n_turts
+bycatch_event_date=c("1992-04-16","1992-06-16","1992-07-16","1993-01-16","1993-08-16","1997-08-16","1997-10-16","1998-01-16","1998-08-16","2001-08-16","2006-10-16")
+df$bycatch_event_date=bycatch_event_date
 
+### compile indicators
+df$indicator=NA
+ind=c("wb1","wb1","ob1","enso","jas","jas","ob1","enso","jas","jas","ob1")
+df$indicator=ind
+df$indicator_values=NA
+ind_vals=c(18.58767,20.87946,21.96880,NA,22.79958,21.70210,23.44478,NA,19.75943,20.68157,22.39351)
+df$indicator_values=ind_vals
+
+#### Step 2. Hindcast rules to see if closures would have been enforced
+rules=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_w2015.csv")
+rownames(rules)=c("February","March","April","May","June","July","August","September","October","November","December","closure_feq","n_turts")
+
+for(i in 1:11){ ## for every month
+  month=df[i,2] %>% as.numeric() %>% -1
+  print(month+1)
+  # add in NA
+  for(indicator in 16:19){ ## for every rule (n=4)
+    print(colnames(rules[indicator]))
+    indicator_val=rules[month,indicator]
+    df_col=indicator-8
+      print(df[i,12])
+      if(is.na(df[i,13])){
+        df[i,df_col]=NA}
+      else{
+      open_close=df[i,13]-indicator_val
+      print(open_close)
+      df_col=indicator-8
+      if(open_close>=0){df[i,df_col]="Closed"
+      print("Closed")}
+      if(open_close<0){df[i,df_col]="Open"
+      print("Open")}
+    }
+  }
+}
+df=df[,c(1:9,11,10,12,13)]
+df=df[,c(1:4,12,13,8:11)]
+# 
 

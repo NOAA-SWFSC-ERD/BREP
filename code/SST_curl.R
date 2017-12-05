@@ -38,6 +38,7 @@ turts_alldata2=left_join(turts,set,by="TripNumber_Set")
 bycatch_dates=turts_alldata2$dt ### final dates ##### CRAP, supposed to be the preceeding month!!!
 bycatch_dates=c("1992-12-16", "1998-07-16", "1998-07-16", "1998-07-16", "1992-03-16" ,"1992-12-16" ,"2006-09-16" ,"1997-07-16" ,"1997-09-16", "2001-07-16" ,"1993-07-16" ,"1993-07-16" ,"1992-12-16" ,"1992-06-16","1997-12-16" ,"1997-07-16", "1992-05-16") ## DOING BY HAND
 
+bycatch_dates="1997-09-16"
 #####--- step 2. set up download for monthly ERDDAP data to cover dates ####
 
 ### A. Pauses system for a period of time to allow url requests to go through
