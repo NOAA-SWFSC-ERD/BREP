@@ -32,3 +32,4 @@ SST_curl.R
 # Script 7
 test_rules_hindcast.R
   script to test moderate and conservative rules to see how often they would have been applied historically
+  now superseded by **test_rules_hindcast.01.16.18.R** for final code
