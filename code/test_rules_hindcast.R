@@ -45,10 +45,15 @@ for(df in df_list){
 rm(df,a,b)
 
 #### writing out in standard formate
-write.csv(ob1_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/ob1_df.csv")
-write.csv(jas_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/jas_df.csv")
-write.csv(wb1_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/wb1_df.csv")
-write.csv(enso_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/enso_df.csv")
+# write.csv(ob1_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/ob1_df.csv")
+# write.csv(jas_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/jas_df.csv")
+# write.csv(wb1_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/wb1_df.csv")
+# write.csv(enso_df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/enso_df.csv")
+
+ob1_df=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/ob1_df.csv") %>% .[,2:15]
+jas_df=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/jas_df.csv")%>% .[,2:15]
+wb1_df=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/wb1_df.csv")%>% .[,2:15]
+enso_df=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/enso_df.csv")%>% .[,2:15]
 
 ###### 
 
@@ -73,6 +78,7 @@ df_empty[11,]=jas_df[11,]
 df_empty[12,]=enso_df[12,]
 
 ## populate with best indicator name
+df_empty[15]=NA
 colnames(df_empty)[15]="Indicator"
 df_empty[1,15]="wb1"
 df_empty[2,15]="ob1"
@@ -87,7 +93,7 @@ df_empty[10,15]="jas"
 df_empty[11,15]="jas"
 df_empty[12,15]="enso"
 
-## populate with moderate +conservative -------------------------------------> CHECK WHY THESE DON"T ALLIGN W PLOTS (because all years are in)
+###### populate with moderate +conservative -----> CHECK WHY THESE DON"T ALLIGN W PLOTS (because all years are in) -----> no longer relevant as of 01/16/18 #####
 df_empty[16]=NA
 colnames(df_empty)[16]="conservative"
 df_empty[16]=apply(df_empty[,1:14],1,min)
@@ -309,7 +315,7 @@ chart
 dev.off()
 
 
-############## ----------------- >>>>>>>>>>>>>>>>>>>>> new work 11/21/18, adding in a lenient threshold (+SD) to test against moderate threshold
+############## ----------------- >>>>>>>>>>>>>>>>>>>>> new work 11/21/18, adding in a lenient threshold (+SD) to test against moderate threshold -----> no longer relevant as of 01/16/18 #####
 df_empty=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/best_indicator_all_years.csv")
 
 df_turtle=df_empty[,c(2,4,5,12:18)] ## getting only years that have turtles
