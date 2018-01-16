@@ -17,9 +17,13 @@ library(raster)
 library(ncdf4)
 library(R.utils)
 library(rworldmap)
+library(stringr)
 
 ####### Step 1. Extract spatial means from all new rs layers for each indicator ####
 ras_list=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new",full.names = T)%>% grep(".grd",.,value=T) %>% stack()
+enso_anom=read.table("/Volumes/SeaGate/BREP/BREP/ENSO/detrend.nino34.ascii.txt",header = T) 
+enso_anom[,2]=str_pad(enso_anom[,2],width=2,side="left",pad=0)
+enso_anom=mutate(enso_anom,indicator_date=paste(YR,MON,"16",sep="-")) %>% .[,5:6]
 
 # define indicators (taken from test_rules.R)
 ##### JAS - best indicator in 07, 08, 10, 11 ####
@@ -67,13 +71,14 @@ ob1_df=as.data.frame(fortify(ob1,region="id"))
 
 
 ###### prepare master data frame and extract ######
-df=data.frame(matrix(NA,ncol=11,nrow=11))
-colnames(df)=c("indicator_date","indicator_month","bycatch_event_date","n.turts","JAS","WB1","OB1","conservative","moderate","lenient","mod_lenient")
+df=data.frame(matrix(NA,ncol=10,nrow=11))
+colnames(df)=c("indicator_date","indicator_month","bycatch_event_date","n.turts","JAS","WB1","OB1","ENSO","moderate","mod_lenient")
 df$indicator_date=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new") %>% grep(".grd",.,value=T) %>% gsub("new_mean_","",.)%>% gsub(".grd","",.)
 df$indicator_month=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new") %>% grep(".grd",.,value=T) %>% gsub("new_mean_","",.)%>% gsub(".grd","",.) %>% substr(.,6,7)
 df$JAS=raster::extract(ras_list,jas,fun=mean,na.rm=T,df=T) %>% gather() %>% .[2:nrow(.),] %>% .[,2]
 df$WB1=raster::extract(ras_list,wb1,fun=mean,na.rm=T,df=T) %>% gather() %>% .[2:nrow(.),] %>% .[,2]
 df$OB1=raster::extract(ras_list,ob1,fun=mean,na.rm=T,df=T) %>% gather() %>% .[2:nrow(.),] %>% .[,2]
+df$ENSO=left_join(df,enso_anom) %>% .[,11]
 df=df[order(df$indicator_date),]
 
 #grabbing bycatch event data
@@ -95,36 +100,36 @@ df$indicator=NA
 ind=c("wb1","wb1","ob1","enso","jas","jas","ob1","enso","jas","jas","ob1")
 df$indicator=ind
 df$indicator_values=NA
-ind_vals=c(18.58767,20.87946,21.96880,NA,22.79958,21.70210,23.44478,NA,19.75943,20.68157,22.39351)
+ind_vals=c(18.58767,20.87946,21.96880,-0.04,22.79958,21.70210,23.44478,2.23,19.75943,20.68157,22.39351) ## taken from DF, these are the thresholds based on the best indicator
 df$indicator_values=ind_vals
 
 #### Step 2. Hindcast rules to see if closures would have been enforced
-rules=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_w2015.csv")
-rownames(rules)=c("February","March","April","May","June","July","August","September","October","November","December","closure_feq","n_turts")
+rules=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_wENSO.csv")
+rownames(rules)=c("January","February","March","April","May","June","July","August","September","October","November","December","closure_feq","n_turts")
 
-for(i in 1:11){ ## for every month
-  month=df[i,2] %>% as.numeric() %>% -1
-  print(month+1)
+for(i in 1:11){ ## for every row
+  month=df[i,2] %>% as.numeric()
+  print(paste0("Bycatch occurred in ",month+1))
+  print(paste0("Proceeding month for indicator value is ",month))
   # add in NA
-  for(indicator in 16:19){ ## for every rule (n=4)
-    print(colnames(rules[indicator]))
+  for(indicator in 16:17){ ## for every rule (n=2)
+    print(paste0("Rule we're evaluating is ",colnames(rules[indicator])))
     indicator_val=rules[month,indicator]
-    df_col=indicator-8
-      print(df[i,12])
-      if(is.na(df[i,13])){
-        df[i,df_col]=NA}
-      else{
-      open_close=df[i,13]-indicator_val
+    print(paste0("rule threshold for ",colnames(rules[indicator]), " in ",month," is ", indicator_val))
+    df_col=indicator-7
+      print(paste0("best indicator for bycatch month is ",df[i,11]))
+      print(paste0("Observed value for indicator in bycatch month is ",df[i,12]))
+      open_close=df[i,12]-indicator_val
       print(open_close)
-      df_col=indicator-8
+      df_col=indicator-7
       if(open_close>=0){df[i,df_col]="Closed"
       print("Closed")}
       if(open_close<0){df[i,df_col]="Open"
       print("Open")}
     }
   }
-}
-df=df[,c(1:9,11,10,12,13)]
-df=df[,c(1:4,12,13,8:11)]
-# 
+
+
+df=df[,c(1:4,11,12,9:10)]
+
 
