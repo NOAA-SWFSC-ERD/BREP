@@ -26,7 +26,7 @@ enso_anom[,2]=str_pad(enso_anom[,2],width=2,side="left",pad=0)
 enso_anom=mutate(enso_anom,indicator_date=paste(YR,MON,"16",sep="-")) %>% .[,5:6]
 
 # define indicators (taken from test_rules.R)
-##### JAS - best indicator in 07, 08, 10, 11 ####
+  ##### JAS - best indicator in 07, 08, 10, 11 ####
 bJAS1=matrix(c(-135,23,  ## define SST box
                -135,25,
                -123,25,
@@ -41,7 +41,7 @@ proj4string(sps)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 plot(sps,add=T)
 jas=sps
 
-##### WB1 - best indicator in 01, 03, 04, 05 ####
+  ##### WB1 - best indicator in 01, 03, 04, 05 ####
 wb1_coords=matrix(c(-120,23,  ## define SST box
                     -120,27,
                     -118.5,27,
@@ -55,7 +55,7 @@ wb1 = SpatialPolygons(list(ps))
 proj4string(wb1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 wb1_df=as.data.frame(fortify(wb1,region="id"))
 
-###### OB1 - best indicator in 02, 06, 09 ####
+  ###### OB1 - best indicator in 02, 06, 09 ####
 ob1_coords=matrix(c(-124.5,23,  ## define SST box
                     -124.5,24.25,
                     -122.5,24.25,
@@ -70,7 +70,7 @@ proj4string(ob1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 ob1_df=as.data.frame(fortify(ob1,region="id"))
 
 
-###### prepare master data frame and extract ######
+  ###### prepare master data frame and extract ######
 df=data.frame(matrix(NA,ncol=10,nrow=11))
 colnames(df)=c("indicator_date","indicator_month","bycatch_event_date","n.turts","JAS","WB1","OB1","ENSO","moderate","mod_lenient")
 df$indicator_date=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new") %>% grep(".grd",.,value=T) %>% gsub("new_mean_","",.)%>% gsub(".grd","",.)
@@ -103,7 +103,7 @@ df$indicator_values=NA
 ind_vals=c(18.58767,20.87946,21.96880,-0.04,22.79958,21.70210,23.44478,2.23,19.75943,20.68157,22.39351) ## taken from DF, these are the thresholds based on the best indicator
 df$indicator_values=ind_vals
 
-#### Step 2. Hindcast rules to see if closures would have been enforced
+######## Step 2. Hindcast rules to see if closures would have been enforced #####
 rules=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_wENSO.csv")
 rownames(rules)=c("January","February","March","April","May","June","July","August","September","October","November","December","closure_feq","n_turts")
 
@@ -132,4 +132,22 @@ for(i in 1:11){ ## for every row
 
 df=df[,c(1:4,11,12,9:10)]
 
+######## Step 3. Check ENSO based closures #####
+# a. find anomalies for months proceeding historical closures
+# b. calc value +/- 1SD
+# c. test threshold found in b against historical closures
+closures=data.frame(matrix(NA,ncol=1,nrow=7))
+colnames(closures)="indicator_date"
+closures$indicator_date=c("2014-07-16","2015-05-16","2015-06-16","2015-07-16","2016-05-16","2016-06-16","2016-07-16") ## months preceeding closures
+a=left_join(closures,enso_anom)
+mean_anom=mean(a$ANOM) #0.4414286
+sd_anom=sd(a$ANOM) #0.5833361
+enso_anom$date=as.Date(enso_anom$indicator_date)
+time=filter(enso_anom,date>=as.Date("2010-05-16")&date<as.Date("2017-01-16")) %>% separate(indicator_date,c("year","month","day"),sep="-") %>% filter(month=="05" | month=="06" | month=="07") %>% group_by(year)
+time$threshold=0.4414286
+time$upper=0.4414286+0.5833361
+time$lower=0.4414286-0.5833361
 
+#b=ggplot()+geom_line(data=time,aes(x=month,y=ANOM,group=year,color=year))
+b=ggplot()+geom_line(data=time,aes(x=date,y=ANOM))+geom_line(data=time,aes(x=date,y=threshold),color="blue")+geom_ribbon(data=time,aes(x=date,ymin=lower, ymax=upper),fill="blue",alpha=0.2)+
+  geom_text(data=time,aes(x=date,y=ANOM,label=date))
