@@ -213,4 +213,100 @@ pdf("/Volumes/SeaGate/BREP/BREP/set_in_indicators/turt_closure_cor_mod_lenient_w
 chart
 dev.off()
 
+#### Evaluating conservative and moderate ENSO rules found in test_rules_historical_bycatch.01.16.18 #####
+enso_anom=read.table("/Volumes/SeaGate/BREP/BREP/ENSO/detrend.nino34.ascii.txt",header = T) %>% filter(YR>=2003&YR<2017) %>% select(YR,MON,ANOM) %>% group_by(MON) %>% spread(YR,ANOM) %>% as.data.frame() %>% .[,2:ncol(.)]
+colnames(enso_anom)=c("2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016")
+rownames(enso_anom)=c("January","February","March","April","May","June","July","August","September","October","November","December")
+
+df_empty=enso_anom
+df_empty$Enso_conservative=0.4414286
+df_empty$Enso_moderate=-0.1419075
+
+## Enso_conservative -------------------------------------> 
+Enso_conservative=df_empty
+Enso_conservative[1:14]=Enso_conservative[1:14]-Enso_conservative[,15]
+empty=Enso_conservative
+
+for(i in 1:12){
+  for(ii in 1:14){
+    print(Enso_conservative[i,ii])
+    if(i==12 && Enso_conservative[i,ii]>=0){empty[1,ii]=("Closed")} ## december rule impacting jan closure
+    if(i==12 && Enso_conservative[i,ii]<0){empty[1,ii]=("Open")} ## december rule impacting jan closure
+    if(Enso_conservative[i,ii]>=0){empty[i+1,ii]=("Closed")}
+    if(Enso_conservative[i,ii]<0){empty[i+1,ii]=("Open")}
+  }
+  
+}
+
+empty=empty[1:12,]
+empty["Closure freq",]=NA
+for(i in 1:14){
+  a=as.data.frame(table(empty[,i]))%>%.[.$Var1=="Closed",]%>%.[1,2]
+  print(a)
+  empty[13,i]=a
+}
+empty[13,c(1:14)][is.na(empty[13,c(1:14)])]<-0
+
+empty["Turtle freq",]=NA
+empty[14,1]=10 #2003
+empty[14,2]=0 #2004
+empty[14,3]=1 #2005
+empty[14,4]=34 #2006
+empty[14,5]=0 #2007
+empty[14,6]=0 #2008
+empty[14,7]=0 #2009
+empty[14,8]=0 #2010
+empty[14,9]=0 #2011
+empty[14,10]=0 #2012
+empty[14,11]=1 #2013
+empty[14,12]=94 #2014
+empty[14,13]=469 #2015
+empty[14,14]=56 #2016
+
+Enso_conservative=empty
+write_csv(Enso_conservative,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/Enso_conservative.csv")
+
+## Enso_moderate -------------------------------------> 
+Enso_moderate=df_empty
+Enso_moderate[1:14]=Enso_moderate[1:14]-Enso_moderate[,16]
+empty=Enso_moderate
+
+for(i in 1:12){
+  for(ii in 1:14){
+    print(Enso_moderate[i,ii])
+    if(i==12 && Enso_moderate[i,ii]>=0){empty[1,ii]=("Closed")} ## december rule impacting jan closure
+    if(i==12 && Enso_moderate[i,ii]<0){empty[1,ii]=("Open")} ## december rule impacting jan closure
+    if(Enso_moderate[i,ii]>=0){empty[i+1,ii]=("Closed")}
+    if(Enso_moderate[i,ii]<0){empty[i+1,ii]=("Open")}
+  }
+  
+}
+
+empty=empty[1:12,]
+empty["Closure freq",]=NA
+for(i in 1:14){
+  a=as.data.frame(table(empty[,i]))%>%.[.$Var1=="Closed",]%>%.[1,2]
+  print(a)
+  empty[13,i]=a
+}
+empty[13,c(1:14)][is.na(empty[13,c(1:14)])]<-0
+
+empty["Turtle freq",]=NA
+empty[14,1]=10 #2003
+empty[14,2]=0 #2004
+empty[14,3]=1 #2005
+empty[14,4]=34 #2006
+empty[14,5]=0 #2007
+empty[14,6]=0 #2008
+empty[14,7]=0 #2009
+empty[14,8]=0 #2010
+empty[14,9]=0 #2011
+empty[14,10]=0 #2012
+empty[14,11]=1 #2013
+empty[14,12]=94 #2014
+empty[14,13]=469 #2015
+empty[14,14]=56 #2016
+
+Enso_moderate=empty
+write_csv(Enso_conservative,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/Enso_conservative.csv")
 

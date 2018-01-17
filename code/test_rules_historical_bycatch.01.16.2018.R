@@ -167,8 +167,8 @@ for(i in 1:11){ ## for every row
   if(c[i,9] - 0.4414286 >=0){c[i,11]="Closed"} ## conservative
   if(c[i,9] - 0.4414286 <0){c[i,11]="Open"} ## conservative
   
-  if(c[i,9] - -0.1419075 >=0){c[i,12]="Closed"} ## conservative
-  if(c[i,9] - -0.1419075 <0){c[i,12]="Open"} ## conservative
+  if(c[i,9] - -0.1419075 >=0){c[i,12]="Closed"} ## moderate
+  if(c[i,9] - -0.1419075 <0){c[i,12]="Open"} ## moderate
 }
   
 d=c[,c(1:8,11:12)]
