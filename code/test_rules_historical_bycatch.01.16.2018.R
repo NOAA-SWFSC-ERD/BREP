@@ -136,18 +136,41 @@ df=df[,c(1:4,11,12,9:10)]
 # a. find anomalies for months proceeding historical closures
 # b. calc value +/- 1SD
 # c. test threshold found in b against historical closures
+
+# a. find anomalies for months proceeding historical closures
 closures=data.frame(matrix(NA,ncol=1,nrow=7))
 colnames(closures)="indicator_date"
 closures$indicator_date=c("2014-07-16","2015-05-16","2015-06-16","2015-07-16","2016-05-16","2016-06-16","2016-07-16") ## months preceeding closures
 a=left_join(closures,enso_anom)
+
+# b. calc value +/- 1SD
 mean_anom=mean(a$ANOM) #0.4414286
 sd_anom=sd(a$ANOM) #0.5833361
 enso_anom$date=as.Date(enso_anom$indicator_date)
 time=filter(enso_anom,date>=as.Date("2010-05-16")&date<as.Date("2017-01-16")) %>% separate(indicator_date,c("year","month","day"),sep="-") %>% filter(month=="05" | month=="06" | month=="07") %>% group_by(year)
 time$threshold=0.4414286
 time$upper=0.4414286+0.5833361
-time$lower=0.4414286-0.5833361
+time$lower=0.4414286-0.5833361 #-0.1419075
+#b=ggplot()+geom_line(data=time,aes(x=date,y=ANOM))+geom_line(data=time,aes(x=date,y=threshold),color="blue")+geom_ribbon(data=time,aes(x=date,ymin=lower, ymax=upper),fill="blue",alpha=0.2)+
+  # geom_text(data=time,aes(x=date,y=ANOM,label=date))
+a$indicator_date=as.Date(a$indicator_date)
 
-#b=ggplot()+geom_line(data=time,aes(x=month,y=ANOM,group=year,color=year))
-b=ggplot()+geom_line(data=time,aes(x=date,y=ANOM))+geom_line(data=time,aes(x=date,y=threshold),color="blue")+geom_ribbon(data=time,aes(x=date,ymin=lower, ymax=upper),fill="blue",alpha=0.2)+
-  geom_text(data=time,aes(x=date,y=ANOM,label=date))
+b=ggplot()+geom_line(data=time,aes(x=date,y=ANOM))+geom_line(data=time,aes(x=date,y=threshold),color="blue")+geom_line(data=time,aes(x=date,y=lower),color="red")+
+  geom_text(data=time,aes(x=date,y=ANOM,label=date)) + geom_text(data=a,aes(x=indicator_date,y=ANOM,label=indicator_date),color="green")
+
+# c. test threshold found in b against historical closures
+c=left_join(df,enso_anom)
+c$Enso_conservative=0.4414286
+c$Enso_moderate=-0.1419075
+
+for(i in 1:11){ ## for every row
+  if(c[i,9] - 0.4414286 >=0){c[i,11]="Closed"} ## conservative
+  if(c[i,9] - 0.4414286 <0){c[i,11]="Open"} ## conservative
+  
+  if(c[i,9] - -0.1419075 >=0){c[i,12]="Closed"} ## conservative
+  if(c[i,9] - -0.1419075 <0){c[i,12]="Open"} ## conservative
+}
+  
+d=c[,c(1:8,11:12)]
+  
+ 
