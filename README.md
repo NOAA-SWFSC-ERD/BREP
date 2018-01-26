@@ -33,3 +33,8 @@ SST_curl.R
 test_rules_hindcast.R
   script to test moderate and conservative rules to see how often they would have been applied historically
   now superseded by **test_rules_hindcast.01.16.18.R** for final code
+
+# Script 8
+test_rules_historical_bycatch.R
+  script to the ability of SST-based rules and ENSO-based rules to avoid historical bycatch events
+  now superseded by **test_rules_historical_bycatch.01.16.18.R** for final code
