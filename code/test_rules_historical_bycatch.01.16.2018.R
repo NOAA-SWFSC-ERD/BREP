@@ -131,6 +131,7 @@ for(i in 1:11){ ## for every row
 
 
 df=df[,c(1:4,11,12,9:10)]
+write.csv(df,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/historical_bycatch.csv")
 
 ######## Step 3. Check ENSO based closures #####
 # a. find anomalies for months proceeding historical closures
