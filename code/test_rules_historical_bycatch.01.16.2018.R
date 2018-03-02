@@ -18,6 +18,8 @@ library(ncdf4)
 library(R.utils)
 library(rworldmap)
 library(stringr)
+library(rgeos)
+library(sp)
 
 ####### Step 1. Extract spatial means from all new rs layers for each indicator ####
 ras_list=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new",full.names = T)%>% grep(".grd",.,value=T) %>% stack()
@@ -400,4 +402,231 @@ empty[14,14]=56 #2016
 
 Enso_min=empty
 write_csv(Enso_min,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/scb_anom_min.csv")
+
+
+######## Step 3. Check ENSO based closures #####  this is new from HW 02.28.18. checking anomalies following fed registrar data, using Mike's extracted ROMS data ####
+library(stringr)
+anoms=read.csv("/Volumes/SeaGate/BREP/BREP/roms_anomalies/BREP_historical_SST_anomaly.txt")
+contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS")#%>% spread(Year,SST_Anomaly)
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+
+## compare to CoastWatch data
+coastwatch=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/scb_anom_df.csv")
+colnames(coastwatch)=gsub("X","",colnames(coastwatch))
+coastwatch=coastwatch[,2:ncol(coastwatch)]
+coastwatch$month=gsub("-","",coastwatch$month)
+contemp_cw=coastwatch %>% gather(Year,SST_Anomaly,-month) %>% mutate(data="CoastWatch")
+colnames(contemp_cw)[1]="Month"
+
+combined=rbind(contemp,contemp_cw) %>% mutate(date=paste0(Year,"-",Month))
+
+test=ggplot()+geom_line(data=combined[combined$data=="CoastWatch",],aes(x=date,y=SST_Anomaly,group=1),color="red")
+test=test+geom_line(data=combined[combined$data=="ROMS",],aes(x=date,y=SST_Anomaly,group=1),color="blue")
+test
+
+### hindcast closure threshod
+contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS")
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-05"|date=="2014-06"|date=="2015-03"|date=="2015-04"|date=="2016-03"|date=="2016-04") ## months preceeding closures, 2nd and 3rd month as in registrar
+threshold=mean(contemp$SST_Anomaly) ## 1.73
+threshold=max(contemp$SST_Anomaly) ## 2.54
+threshold=min(contemp$SST_Anomaly) ## 1.4
+
+### test hindcast closure threshod
+contemp=filter(anoms,Year>2002) %>% spread(Year,SST_Anomaly) %>% select(-Month)
+
+contemp_test=contemp
+contemp_test[1:14]=contemp_test[1:14]-1.4
+empty=contemp
+
+for(i in 1:12){
+  for(ii in 1:14){
+    print(contemp[i,ii])
+    if(i==10 && mean(c(contemp_test[i,ii],contemp_test[i+1,ii]))>=0){empty[1,ii]=("Closed")} ## oct/nov rule impacting jan closure
+    if(i==10 && mean(c(contemp_test[i,ii],contemp_test[i+1,ii]))<0){empty[1,ii]=("Open")} ## oct/nov rule impacting jan closure
+    
+    if(i==11 && mean(c(contemp_test[i,ii],contemp_test[i+1,ii]))>=0){empty[2,ii]=("Closed")} ## nov/dec rule impacting feb closure
+    if(i==11 && mean(c(contemp_test[i,ii],contemp_test[i+1,ii]))<0){empty[2,ii]=("Open")} ## nov/dec rule impacting feb closure
+    
+    if(i==12 && mean(c(contemp_test[i,ii],contemp_test[1,ii]))>=0){empty[3,ii]=("Closed")} ## dec/jan rule impacting mar closure
+    if(i==12 && mean(c(contemp_test[i,ii],contemp_test[1,ii]))<0){empty[3,ii]=("Open")} ## dec/jan rule impacting mar closure
+    
+    print(c(i,i+1,i+3))
+    if(i<=9 && mean(c(contemp_test[i,ii],contemp_test[i+1,ii]))>=0){empty[i+3,ii]=("Closed")}
+    if(i<=9 && mean(c(contemp_test[i,ii],contemp_test[i+1,ii]))<0){empty[i+3,ii]=("Open")}
+  }
+  
+}
+## lets try plotting it
+contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS")
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+contemp$mean=1.73
+contemp$max=2.54
+contemp$min=1.4
+
+df=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-05"|date=="2014-06"|date=="2015-03"|date=="2015-04"|date=="2016-03"|date=="2016-04") ## months preceeding closures, 2nd and 3rd month as in registrar
+df=df %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+
+
+b=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly))+geom_line(data=contemp,aes(x=date,y=mean),color="black")+geom_line(data=contemp,aes(x=date,y=min),color="red")+geom_line(data=contemp,aes(x=date,y=max),color="blue") +
+  geom_point(data=df,aes(x=date,y=SST_Anomaly),color="pink")
+  #geom_text(data=contemp,aes(x=date,y=SST_Anomaly,label=date)) #+ geom_text(data=a,aes(x=indicator_date,y=SST_Anomaly,label=indicator_date),color="green")
+
+### test if historical bycatch would have been avoided
+contemp=anoms
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+bycatch_event_date=c("1992-04-16","1992-06-16","1992-07-16","1993-01-16","1993-08-16","1997-08-16","1997-10-16","1998-01-16","1998-08-16","2001-08-16","2006-10-16")
+# df=data.frame(Bycatch=character(),Anom=numeric(),Status=character())
+dff=data.frame(matrix(NA,nrow=11,ncol = 3))
+dff[1]=bycatch_event_date
+colnames(dff)[1]="Bycatch"
+
+for(i in 1:nrow(dff)){
+  time=dff[i,1]
+  print(time)
+  pos=grep(time,as.character(contemp$date))
+  value=mean(c(contemp$SST_Anomaly[pos-3],contemp$SST_Anomaly[pos-2]))
+  dff[i,2]=value
+  if(value>=1.4){dff[i,3]="Closed"}
+  if(value<1.4){dff[i,3]="Open"}
+}
+
+colnames(dff)[3]="Current_anomaly_rule"
+
+######## Step 4. adding sightings data into the evaluation ####
+turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
+scb.cc.xpts$anom=NA
+scb.cc.xpts$ruling=NA
+
+for(i in 1:nrow(scb.cc.xpts)){
+  time=as.character(scb.cc.xpts[i,4]) %>% strsplit(.,"-") %>%unlist() %>% .[1:2] 
+  time= paste0(time[[1]],"-",time[[2]])
+  print(time)
+  pos=grep(time,as.character(contemp$date))
+  value=mean(c(contemp$SST_Anomaly[pos-3],contemp$SST_Anomaly[pos-2]))
+  scb.cc.xpts[i,7]=value
+  if(value>=1.4){scb.cc.xpts[i,8]="Closed"}
+  if(value<1.4){scb.cc.xpts[i,8]="Open"}
+}
+
+map.world = map_data(map="world")
+map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat),fill="grey")#+coord_cartesian()
+map=map+geom_point(data=scb.cc.xpts,aes(x=lon,y=lat,color=ruling),size=.2)
+map=map+coord_cartesian(xlim=c(-135,-115),ylim=c(25,60),expand=F)
+map
+
+pla=readShapeSpatial("/Volumes/SeaGate/BREP/BREP/spatial_files_for_figures/loggerhead.shp")
+sightings=scb.cc.xpts
+coordinates(sightings)=~lon+lat
+pla_sightings=intersect(sightings,pla)
+pla_sightings@data$lat=pla_sightings@coords[,2]
+pla_sightings@data$lon=pla_sightings@coords[,1]
+pla_sightings=pla_sightings@data
+
+map.world = map_data(map="world")
+map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat),fill="grey")#+coord_cartesian()
+map=map+geom_point(data=pla_sightings,aes(x=lon,y=lat,color=ruling),size=.2)
+map=map+coord_cartesian(xlim=c(-122,-115),ylim=c(30,40),expand=F)
+map
+
+
+### hindcast closure threshod --------------------------> trying again based on month directly proceeding
+contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS")
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-07"|date=="2015-05"|date=="2016-05") ## months preceeding closures, 2nd and 3rd month as in registrar
+threshold=mean(contemp$SST_Anomaly) ## 1.183333
+threshold=max(contemp$SST_Anomaly) ## 1.62
+threshold=min(contemp$SST_Anomaly) ## 0.92
+
+### test hindcast closure threshod
+contemp=filter(anoms,Year>2002) %>% spread(Year,SST_Anomaly) %>% select(-Month)
+
+contemp_test=contemp
+contemp_test[1:14]=contemp_test[1:14]-0.92
+empty=contemp
+
+for(i in 1:12){
+  for(ii in 1:14){
+    print(contemp[i,ii])
+    
+    if(i==12 && contemp_test[i,ii]>=0){empty[1,ii]=("Closed")} ## dec/jan rule impacting mar closure
+    if(i==12 && contemp_test[i,ii]<0){empty[1,ii]=("Open")} ## dec/jan rule impacting mar closure
+    
+    print(c(i,i+1,i+3))
+    if(i<=11 && contemp_test[i,ii]>=0){empty[i+1,ii]=("Closed")}
+    if(i<=11 && contemp_test[i,ii]<0){empty[i+1,ii]=("Open")}
+  }
+}
+
+turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
+scb.cc.xpts$anom=NA
+scb.cc.xpts$ruling=NA
+
+contemp=anoms
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+
+for(i in 1:nrow(scb.cc.xpts)){
+  time=as.character(scb.cc.xpts[i,4]) %>% strsplit(.,"-") %>%unlist() %>% .[1:2] 
+  time= paste0(time[[1]],"-",time[[2]])
+  print(time)
+  pos=grep(time,as.character(contemp$date))
+  value=contemp$SST[pos-1]
+  scb.cc.xpts[i,7]=value
+  if(value>=0.92){scb.cc.xpts[i,8]="Closed"}
+  if(value<0.92){scb.cc.xpts[i,8]="Open"}
+}
+
+sightings=scb.cc.xpts
+coordinates(sightings)=~lon+lat
+pla_sightings=intersect(sightings,pla)
+pla_sightings@data$lat=pla_sightings@coords[,2]
+pla_sightings@data$lon=pla_sightings@coords[,1]
+pla_sightings=pla_sightings@data
+
+map.world = map_data(map="world")
+map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat),fill="grey")#+coord_cartesian()
+map=map+geom_point(data=pla_sightings,aes(x=lon,y=lat,color=ruling),size=.2)
+map=map+coord_cartesian(xlim=c(-122,-115),ylim=c(30,40),expand=F)
+map
+
+### test if historical bycatch would have been avoided
+contemp=anoms
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+bycatch_event_date=c("1992-04-16","1992-06-16","1992-07-16","1993-01-16","1993-08-16","1997-08-16","1997-10-16","1998-01-16","1998-08-16","2001-08-16","2006-10-16")
+# df=data.frame(Bycatch=character(),Anom=numeric(),Status=character())
+dff=data.frame(matrix(NA,nrow=11,ncol = 3))
+dff[1]=bycatch_event_date
+colnames(dff)[1]="Bycatch"
+
+for(i in 1:nrow(dff)){
+  time=dff[i,1]
+  print(time)
+  pos=grep(time,as.character(contemp$date))
+  value=contemp$SST_Anomaly[pos-1]
+  dff[i,2]=value
+  if(value>=0.92){dff[i,3]="Closed"}
+  if(value<0.92){dff[i,3]="Open"}
+}
+
+colnames(dff)[3]="Current_anomaly_rule_.92"
+
+## lets try plotting raw anomalies ROMS
+## lets try plotting it
+contemp=anoms %>% mutate(data="ROMS")
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+contemp$max=.92
+contemp$min=1.4
+
+df=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-05"|date=="2014-06"|date=="2015-03"|date=="2015-04"|date=="2016-03"|date=="2016-04") ## months preceeding closures, 2nd and 3rd month as in registrar
+df=df %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+
+
+b=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly))+geom_line(data=contemp,aes(x=date,y=min),color="red")+geom_line(data=contemp,aes(x=date,y=max),color="blue") +
+  geom_point(data=df,aes(x=date,y=SST_Anomaly),color="pink")
+#geom_text(data=contemp,aes(x=date,y=SST_Anomaly,label=date)) #+ geom_text(data=a,aes(x=indicator_date,y=SST_Anomaly,label=indicator_date),color="green")
 
