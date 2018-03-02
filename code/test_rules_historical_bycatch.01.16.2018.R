@@ -532,7 +532,7 @@ map=map+coord_cartesian(xlim=c(-122,-115),ylim=c(30,40),expand=F)
 map
 
 
-### hindcast closure threshod --------------------------> trying again based on month directly proceeding
+### hindcast closure threshod --------------------------> trying again based on month directly proceeding #####
 contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS")
 contemp$Month=str_pad(contemp$Month,2,pad="0")
 contemp=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-07"|date=="2015-05"|date=="2016-05") ## months preceeding closures, 2nd and 3rd month as in registrar
@@ -630,3 +630,132 @@ b=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly))+geom_line(data=cont
   geom_point(data=df,aes(x=date,y=SST_Anomaly),color="pink")
 #geom_text(data=contemp,aes(x=date,y=SST_Anomaly,label=date)) #+ geom_text(data=a,aes(x=indicator_date,y=SST_Anomaly,label=indicator_date),color="green")
 
+
+
+### hindcast closure threshod --------------------------> trying again based on the 6 months directly proceeding #####
+contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS")
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=paste0(Year,"-",Month))
+one=contemp[grep("2014-07",contemp$date):(grep("2014-07",contemp$date)-5),]
+two=contemp[grep("2015-05",contemp$date):(grep("2015-05",contemp$date)-5),]
+three=contemp[grep("2016-05",contemp$date):(grep("2016-05",contemp$date)-5),]
+contemp=do.call("rbind",list(one,two,three))
+
+threshold=mean(contemp$SST_Anomaly) ## 1.553889
+threshold=max(contemp$SST_Anomaly) ## 2.54
+threshold=min(contemp$SST_Anomaly) ## 0.77
+
+### test hindcast closure threshod
+contemp=filter(anoms,Year>2001) #%>% spread(Year,SST_Anomaly) %>% select(-Month)
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=paste0(Year,"-",Month))
+contemp$eval=NA
+
+for(i in 7:nrow(contemp)){
+contemp[i,5]=mean(c(contemp[i-1,3],contemp[i-2,3],contemp[i-3,3],contemp[i-4,3],contemp[i-5,3],contemp[i-6,3]))
+}
+
+contemp$ruling=NA
+for(i in 7:nrow(contemp)){
+  if(contemp[i,5]>=0.77){contemp[i,6]="Closed"}
+  if(contemp[i,5]<0.77){contemp[i,6]="Open"}
+}
+
+contempp= contemp %>% select(-c(eval,date,SST_Anomaly)) %>% filter(Year>2003) %>% spread(Year,ruling) %>% select(-Month)
+
+### test if historical sightings would have been avoided
+turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
+scb.cc.xpts$anom=NA
+scb.cc.xpts$ruling=NA
+
+contemp=anoms
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+
+for(i in 1:nrow(scb.cc.xpts)){
+  time=as.character(scb.cc.xpts[i,4]) %>% strsplit(.,"-") %>%unlist() %>% .[1:2] 
+  time= paste0(time[[1]],"-",time[[2]])
+  print(time)
+  pos=grep(time,as.character(contemp$date))
+  value=contemp$SST[pos-1]
+  scb.cc.xpts[i,7]=value
+  if(value>=0.77){scb.cc.xpts[i,8]="Closed"}
+  if(value<0.77){scb.cc.xpts[i,8]="Open"}
+}
+
+sightings=scb.cc.xpts
+coordinates(sightings)=~lon+lat
+pla_sightings=intersect(sightings,pla)
+pla_sightings@data$lat=pla_sightings@coords[,2]
+pla_sightings@data$lon=pla_sightings@coords[,1]
+pla_sightings=pla_sightings@data
+
+map.world = map_data(map="world")
+map=ggplot()+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat),fill="grey")#+coord_cartesian()
+map=map+geom_point(data=pla_sightings,aes(x=lon,y=lat,color=ruling),size=.2)
+map=map+coord_cartesian(xlim=c(-122,-115),ylim=c(30,40),expand=F)
+map
+
+### test if historical bycatch would have been avoided
+contemp=anoms
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+bycatch_event_date=c("1992-04-16","1992-06-16","1992-07-16","1993-01-16","1993-08-16","1997-08-16","1997-10-16","1998-01-16","1998-08-16","2001-08-16","2006-10-16")
+# df=data.frame(Bycatch=character(),Anom=numeric(),Status=character())
+dff=data.frame(matrix(NA,nrow=11,ncol = 3))
+dff[1]=bycatch_event_date
+colnames(dff)[1]="Bycatch"
+
+for(i in 1:nrow(dff)){
+  time=dff[i,1]
+  print(time)
+  pos=grep(time,as.character(contemp$date))
+  value=mean(c(contemp$SST_Anomaly[pos-1],contemp$SST_Anomaly[pos-2],contemp$SST_Anomaly[pos-3],contemp$SST_Anomaly[pos-4],contemp$SST_Anomaly[pos-5],contemp$SST_Anomaly[pos-6]))
+  dff[i,2]=value
+  if(value>=0.77){dff[i,3]="Closed"}
+  if(value<0.77){dff[i,3]="Open"}
+}
+
+colnames(dff)[3]="Current_anomaly_rule_.77"
+
+## lets try plotting raw anomalies ROMS
+## lets try plotting it
+contemp=anoms %>% mutate(data="ROMS")
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+contemp$max=.92
+contemp$min=1.4
+contemp$mean=.77
+
+df=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-05"|date=="2014-06"|date=="2015-03"|date=="2015-04"|date=="2016-03"|date=="2016-04") ## months preceeding closures, 2nd and 3rd month as in registrar
+df=df %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+
+
+b=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly))+geom_line(data=contemp,aes(x=date,y=min),color="red")+geom_line(data=contemp,aes(x=date,y=max),color="blue")+ geom_line(data=contemp,aes(x=date,y=mean),color="green") +
+  geom_point(data=df,aes(x=date,y=SST_Anomaly),color="pink")
+#geom_text(data=contemp,aes(x=date,y=SST_Anomaly,label=date)) #+ geom_text(data=a,aes(x=indicator_date,y=SST_Anomaly,label=indicator_date),color="green")
+
+### test hindcast closure threshod
+## then plot over anomaly
+
+contemp=anoms #%>% spread(Year,SST_Anomaly) %>% select(-Month)
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+contemp=contemp %>% mutate(date=as.Date(paste0(Year,"-",Month,"-16")))
+contemp$eval=NA
+
+for(i in 7:nrow(contemp)){
+  contemp[i,5]=mean(c(contemp[i-1,3],contemp[i-2,3],contemp[i-3,3],contemp[i-4,3],contemp[i-5,3],contemp[i-6,3]))
+}
+
+contemp$ruling=NA
+for(i in 7:nrow(contemp)){
+  if(contemp[i,5]>=0.77){contemp[i,6]="Closed"}
+  if(contemp[i,5]<0.77){contemp[i,6]="Open"}
+}
+
+contemp$max=.92
+contemp$min=1.4
+contemp$mean=.77
+
+b=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly))+geom_line(data=contemp,aes(x=date,y=min),color="red")+geom_line(data=contemp,aes(x=date,y=max),color="blue")+ geom_line(data=contemp,aes(x=date,y=mean),color="green")+
+  geom_point(data=contemp,aes(x=date,y=SST_Anomaly,color=ruling))+scale_color_manual(values=c("Closed"="red","Open"=NA))
