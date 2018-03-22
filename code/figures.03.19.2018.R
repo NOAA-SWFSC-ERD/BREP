@@ -287,7 +287,7 @@ plot4
  dev.off()
  
 
-## ------------------------------------> figure 4: Comparison of coastwatch and ROMS sst anomalies (current decision making process) ####
+## ------------------------------------>figure 4: Comparison of coastwatch and ROMS sst anomalies (current decision making process) ####
  # working with coast watch data
  scb_coords=matrix(c(-120.3, 30.8,  ## define SST box
                      -120.3,34.5,
@@ -333,7 +333,7 @@ plot4
  dev.off()
  
 
-## ------------------------------------> figure 5: Map of SST indicator boxes ####
+## ------------------------------------>figure 5: Map of SST indicator boxes ####
 ##### load rasters
 plot_dir="/Volumes/SeaGate/BREP/BREP/priority_plots/"
 
@@ -481,6 +481,147 @@ par(mar=c(4,4,1,1))
 par(cex=1)
 map2
 dev.off()
+
+
+
+## ------------------------------------>figure 6: SST box indicator ####
+#1. extract best indicator for each month
+#1a warning box (WB) ---> best indicator in jan, mar, apr, may
+wb1_coords=matrix(c(-120,23,  ## define SST box
+                    -120,27,
+                    -118.5,27,
+                    -118.5,23,
+                    -120,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(wb1_coords)
+ps=Polygons(list(p),1)
+wb1 = SpatialPolygons(list(ps))
+proj4string(wb1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+#1b observation box (OB) ---> best indicator in feb, jun, sep
+
+ob1_coords=matrix(c(-124.5,23,  ## define SST box
+                    -124.5,24.25,
+                    -122.5,24.25,
+                    -122.5,23,
+                    -124.5,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(ob1_coords)
+ps=Polygons(list(p),1)
+ob1 = SpatialPolygons(list(ps))
+proj4string(ob1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+#1c JAS box 1---> best indicator in jul, aug, oct, nov, dec
+JAS_coords=matrix(c(-135,23,  ## define SST box
+                    -135,25,
+                    -123,25,
+                    -123,23,
+                    -135,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(JAS_coords)
+ps=Polygons(list(p),1)
+sps = SpatialPolygons(list(ps))
+proj4string(sps)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+#2. redetermine thresholds
+month_list=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom",full.names = T) %>% grep(".grd",.,value=T)
+id02=grep("2002",month_list,value = F)
+id17=grep("2017",month_list,value = F)
+month_list=month_list[-c(id02,id17)]
+
+jan=month_list %>% grep("-01-",.,value=T) %>% stack()
+feb=month_list %>% grep("-02-",.,value=T) %>% stack()
+mar=month_list %>% grep("-03-",.,value=T) %>% stack()
+apr=month_list %>% grep("-04-",.,value=T) %>% stack()
+may=month_list %>% grep("-05-",.,value=T) %>% stack()
+jun=month_list %>% grep("-06-",.,value=T) %>% stack()
+jul=month_list %>% grep("-07-",.,value=T) %>% stack()
+aug=month_list %>% grep("-08-",.,value=T) %>% stack()
+sep=month_list %>% grep("-09-",.,value=T) %>% stack()
+oct=month_list %>% grep("-10-",.,value=T) %>% stack()
+nov=month_list %>% grep("-11-",.,value=T) %>% stack()
+dec=month_list %>% grep("-12-",.,value=T) %>% stack()
+
+#months=list(jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec)
+names=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom") %>% grep(".grd",.,value=T)%>% grep("-01-",.,value=T) %>% gsub("anom_","",.) %>% gsub(".grd","",.) %>% .[1:14]
+#names(months)=c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
+
+# prep_fcn=function(x){ # -----> stuff that for whatever reason didn't work
+#   id02=grep("2002",x)
+#   id17=grep("2017",x)
+#   if(length(grep("2002",x))!=0){
+#     x=x[-id02]}
+#   
+#   if(length(grep("2017",x))!=0){
+#     x=x[-id17]}
+#   
+#   x=stack(x)
+#   names(x)=names
+#   return(x)
+# }
+# 
+# for(i in 1:12){
+#   name=names(months[i])
+#   print(name)
+#   a=prep_fcn(months[[i]])
+#   assign(name,a)
+# }
+# 
+# lapply(months,FUN=prep_fcn) # -----> end stuff that for whatever reason didn't work
+
+empty=data.frame(matrix(nrow=14,ncol=14))
+colnames(empty)=c("date","box","jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
+
+#2a warning box (WB) ---> best indicator in jan, mar, apr, may
+jan_mean=raster::extract(jan,wb1,fun=mean,na.rm=T,df=T)
+mar_mean=raster::extract(mar,wb1,fun=mean,na.rm=T,df=T)
+apr_mean=raster::extract(apr,wb1,fun=mean,na.rm=T,df=T)
+may_mean=raster::extract(may,wb1,fun=mean,na.rm=T,df=T)
+
+empty$jan=t(jan_mean)[2:15]
+empty$mar=t(mar_mean)[2:15]
+empty$apr=t(apr_mean)[2:15]
+empty$may=t(may_mean)[2:15]
+
+#2b observation box (OB) ---> best indicator in feb, jun, sep
+feb_mean=raster::extract(feb,wb1,fun=mean,na.rm=T,df=T)
+jun_mean=raster::extract(jun,wb1,fun=mean,na.rm=T,df=T)
+sep_mean=raster::extract(sep,wb1,fun=mean,na.rm=T,df=T)
+
+empty$feb=t(feb_mean)[2:15]
+empty$jun=t(jun_mean)[2:15]
+empty$sep=t(sep_mean)[2:15]
+
+#2c JAS box 1---> best indicator in jul, aug, oct, nov, dec
+jul_mean=raster::extract(jul,wb1,fun=mean,na.rm=T,df=T)
+aug_mean=raster::extract(aug,wb1,fun=mean,na.rm=T,df=T)
+oct_mean=raster::extract(oct,wb1,fun=mean,na.rm=T,df=T)
+nov_mean=raster::extract(nov,wb1,fun=mean,na.rm=T,df=T)
+dec_mean=raster::extract(dec,wb1,fun=mean,na.rm=T,df=T)
+
+empty$jul=t(jul_mean)[2:15]
+empty$aug=t(aug_mean)[2:15]
+empty$oct=t(oct_mean)[2:15]
+empty$nov=t(nov_mean)[2:15]
+empty$dec=t(dec_mean)[2:15]
+
+empty$date=gsub("-01-16","",names)
+colnames(empty)=c("date","box","01","02","03","04","05","06","07","08","09","10","11","12")
+a=empty %>% gather(Month,anomaly,-date,-box)
+a=within(a,box[a$Month=="01"|a$Month=="03"|a$Month=="04"|a$Month=="05"]<-"WB")
+a=within(a,box[a$Month=="02"|a$Month=="06"|a$Month=="09"]<-"OB")
+a=within(a,box[a$Month=="07"|a$Month=="08"|a$Month=="11"|a$Month=="12"]<-"JAS")
+a=a %>% dplyr::rename(Year=date)
+a=a %>% mutate(Date=as.Date(paste(Year,Month,"16",sep="-")))
+
+write.csv(a,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/box_indicator.csv") # ---------------- > add thresholds and then rewrite!!!
+
+
+
+#3. negative/positive indicators relative to thresholds
 
 
 
