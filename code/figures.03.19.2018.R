@@ -20,6 +20,8 @@ library(reshape)
 library(tidyverse)
 library(cowplot)
 library(stringr)
+library(DataCombine)
+library(lubridate)
 #######
 
 
@@ -89,7 +91,8 @@ closures$indicator_date=c("2014-02-16","2014-03-16","2014-04-16","2014-05-16","2
 a=left_join(closures,enso_anom)
 mean_anom_6month=mean(a$ANOM) # 0.6855556
 
-contemp=filter(enso_anom,YR>2001) #%>% spread(Year,SST_Anomaly) %>% select(-Month)
+#contemp=filter(enso_anom,YR>2001) %>% spread(Year,SST_Anomaly) %>% select(-Month)
+contemp=enso_anom 
 contemp$one_month= 0.4533333
 contemp$two_three= 0.635
 contemp$six_month= 0.6855556
@@ -199,7 +202,8 @@ plot4
  anoms=read.csv("/Volumes/SeaGate/BREP/BREP/roms_anomalies/BREP_historical_SST_anomaly.txt")
  
  # a. find anomalies for months proceeding historical closures
- contemp=filter(anoms,Year>2001) %>% mutate(data="ROMS")
+ #contemp=filter(anoms,Year>2001) %>% mutate(data="ROMS")
+ contemp=anoms
  contemp$Month=str_pad(contemp$Month,2,pad="0")
  mean_anom_1month=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-07"|date=="2015-05"|date=="2016-05") %>% summarise(mean=min(SST_Anomaly)) %>% .[1,1] ## 1 month preceding closures
  mean_anom_23=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-05"|date=="2014-06"|date=="2015-03"|date=="2015-04"|date=="2016-03"|date=="2016-04") %>% summarise(mean=min(SST_Anomaly))%>% .[1,1] ## months preceeding closures, 2nd and 3rd month as in registrar
@@ -231,11 +235,11 @@ plot4
    if(one_month_status>=contemp$one_month[1]){contemp$one_month_status[i]="Closed"}
    if(one_month_status<contemp$one_month[1]){contemp$one_month_status[i]="Open"}
    
-   if(two_three_status>=contemp$one_month[1]){contemp$two_three_status[i]="Closed"}
-   if(two_three_status<contemp$one_month[1]){contemp$two_three_status[i]="Open"}
+   if(two_three_status>=contemp$two_three[1]){contemp$two_three_status[i]="Closed"}
+   if(two_three_status<contemp$two_three[1]){contemp$two_three_status[i]="Open"}
    
-   if(six_month_status>=contemp$one_month[1]){contemp$six_month_status[i]="Closed"}
-   if(six_month_status<contemp$one_month[1]){contemp$six_month_status[i]="Open"}
+   if(six_month_status>=contemp$six_month[1]){contemp$six_month_status[i]="Closed"}
+   if(six_month_status<contemp$six_month[1]){contemp$six_month_status[i]="Open"}
  }
  contemp=contemp %>% filter(YR>2002) %>% dplyr::mutate(indicator_date=as.Date(indicator_date))
  closures=contemp %>% filter(indicator_date=="2014-08-16"|indicator_date=="2014-09-16"|indicator_date=="2015-06-16"|indicator_date=="2015-07-16"|indicator_date=="2015-08-16"|indicator_date=="2015-09-16"|indicator_date=="2016-06-16"|indicator_date=="2016-07-16"|indicator_date=="2016-08-16"|indicator_date=="2016-09-16") %>% group_by(YR)
@@ -523,14 +527,15 @@ JAS_coords=matrix(c(-135,23,  ## define SST box
 
 p=Polygon(JAS_coords)
 ps=Polygons(list(p),1)
-sps = SpatialPolygons(list(ps))
-proj4string(sps)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+jas = SpatialPolygons(list(ps))
+proj4string(jas)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 
 #2. redetermine thresholds
-month_list=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom",full.names = T) %>% grep(".grd",.,value=T)
+month_list=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "mean",full.names = T) %>% grep(".grd",.,value=T)
 id02=grep("2002",month_list,value = F)
 id17=grep("2017",month_list,value = F)
 month_list=month_list[-c(id02,id17)]
+ras="/Volumes/SeaGate/BREP/jplmur_raster/mean_2002-12-16.grd" ## need this to determine closure status 2003-01-01
 
 jan=month_list %>% grep("-01-",.,value=T) %>% stack()
 feb=month_list %>% grep("-02-",.,value=T) %>% stack()
@@ -543,34 +548,9 @@ aug=month_list %>% grep("-08-",.,value=T) %>% stack()
 sep=month_list %>% grep("-09-",.,value=T) %>% stack()
 oct=month_list %>% grep("-10-",.,value=T) %>% stack()
 nov=month_list %>% grep("-11-",.,value=T) %>% stack()
-dec=month_list %>% grep("-12-",.,value=T) %>% stack()
+dec=month_list %>% grep("-12-",.,value=T) %>% list(ras,.) %>% unlist() %>% stack()
 
-#months=list(jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec)
-names=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom") %>% grep(".grd",.,value=T)%>% grep("-01-",.,value=T) %>% gsub("anom_","",.) %>% gsub(".grd","",.) %>% .[1:14]
-#names(months)=c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
-
-# prep_fcn=function(x){ # -----> stuff that for whatever reason didn't work
-#   id02=grep("2002",x)
-#   id17=grep("2017",x)
-#   if(length(grep("2002",x))!=0){
-#     x=x[-id02]}
-#   
-#   if(length(grep("2017",x))!=0){
-#     x=x[-id17]}
-#   
-#   x=stack(x)
-#   names(x)=names
-#   return(x)
-# }
-# 
-# for(i in 1:12){
-#   name=names(months[i])
-#   print(name)
-#   a=prep_fcn(months[[i]])
-#   assign(name,a)
-# }
-# 
-# lapply(months,FUN=prep_fcn) # -----> end stuff that for whatever reason didn't work
+names=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom") %>% grep(".grd",.,value=T)%>% grep("-01-",.,value=T) %>% gsub("anom_","",.) %>% gsub(".grd","",.) %>% .[1:14] %>% list("2002",.) %>% unlist()
 
 empty=data.frame(matrix(nrow=14,ncol=14))
 colnames(empty)=c("date","box","jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec")
@@ -587,46 +567,144 @@ empty$apr=t(apr_mean)[2:15]
 empty$may=t(may_mean)[2:15]
 
 #2b observation box (OB) ---> best indicator in feb, jun, sep
-feb_mean=raster::extract(feb,wb1,fun=mean,na.rm=T,df=T)
-jun_mean=raster::extract(jun,wb1,fun=mean,na.rm=T,df=T)
-sep_mean=raster::extract(sep,wb1,fun=mean,na.rm=T,df=T)
+feb_mean=raster::extract(feb,ob1,fun=mean,na.rm=T,df=T)
+jun_mean=raster::extract(jun,ob1,fun=mean,na.rm=T,df=T)
+sep_mean=raster::extract(sep,ob1,fun=mean,na.rm=T,df=T)
 
 empty$feb=t(feb_mean)[2:15]
 empty$jun=t(jun_mean)[2:15]
 empty$sep=t(sep_mean)[2:15]
 
 #2c JAS box 1---> best indicator in jul, aug, oct, nov, dec
-jul_mean=raster::extract(jul,wb1,fun=mean,na.rm=T,df=T)
-aug_mean=raster::extract(aug,wb1,fun=mean,na.rm=T,df=T)
-oct_mean=raster::extract(oct,wb1,fun=mean,na.rm=T,df=T)
-nov_mean=raster::extract(nov,wb1,fun=mean,na.rm=T,df=T)
-dec_mean=raster::extract(dec,wb1,fun=mean,na.rm=T,df=T)
+jul_mean=raster::extract(jul,jas,fun=mean,na.rm=T,df=T)
+aug_mean=raster::extract(aug,jas,fun=mean,na.rm=T,df=T)
+oct_mean=raster::extract(oct,jas,fun=mean,na.rm=T,df=T)
+nov_mean=raster::extract(nov,jas,fun=mean,na.rm=T,df=T)
+dec_mean=raster::extract(dec,jas,fun=mean,na.rm=T,df=T)
 
 empty$jul=t(jul_mean)[2:15]
 empty$aug=t(aug_mean)[2:15]
 empty$oct=t(oct_mean)[2:15]
 empty$nov=t(nov_mean)[2:15]
-empty$dec=t(dec_mean)[2:15]
+empty=InsertRow(empty,rep(NA,14),RowNum=1)
+empty$dec=t(dec_mean)[2:16]
 
 empty$date=gsub("-01-16","",names)
 colnames(empty)=c("date","box","01","02","03","04","05","06","07","08","09","10","11","12")
 a=empty %>% gather(Month,anomaly,-date,-box)
 a=within(a,box[a$Month=="01"|a$Month=="03"|a$Month=="04"|a$Month=="05"]<-"WB")
 a=within(a,box[a$Month=="02"|a$Month=="06"|a$Month=="09"]<-"OB")
-a=within(a,box[a$Month=="07"|a$Month=="08"|a$Month=="11"|a$Month=="12"]<-"JAS")
+a=within(a,box[a$Month=="07"|a$Month=="08"|a$Month=="10"|a$Month=="11"|a$Month=="12"]<-"JAS")
 a=a %>% dplyr::rename(Year=date)
 a=a %>% mutate(Date=as.Date(paste(Year,Month,"16",sep="-")))
+a=a %>% mutate(id=paste(box,Month,sep="-"))
 
-write.csv(a,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/box_indicator.csv") # ---------------- > add thresholds and then rewrite!!!
+# get only turtle years: 2003,2005,2006,2013,2014,2015,2016, find moderate threshold (i.e. mean)
+turtle_a=a %>% filter(Year==2003|Year==2005|Year==2006|Year==2013|Year==2014|Year==2015|Year==2016)
+thresholds=turtle_a %>% group_by(box,Month) %>% summarise(mean=mean(anomaly))
+thresholds=thresholds %>% mutate(id=paste(box,Month,sep="-"))
+write.csv(thresholds,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_thresholds.csv")
 
+master=left_join(a,thresholds) %>% dplyr::rename(Threshold=mean) %>% select(-id) %>% dplyr::rename(Temperature=anomaly) %>% arrange(Date) %>% .[complete.cases(.),]
+write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_indicator.csv") 
 
+#3. negative/positive indicators relative to thresholds, setting values for proceding month
+# need 2002-12-16
+master$Ruling=NA
+for(i in 1:(nrow(master)-1)){
+  master$Ruling[i+1]=(master$Temperature[i]-master$Threshold[i])
+}
 
-#3. negative/positive indicators relative to thresholds
+master=master[complete.cases(master),]%>% mutate(Zero=0)
 
+#master=master %>% mutate(Ruling=Temperature-Threshold) %>% mutate(Zero=0)
+closures=master %>% filter(Date=="2014-08-16"|Date=="2014-09-16"|Date=="2015-06-16"|Date=="2015-07-16"|Date=="2015-08-16"|Date=="2015-09-16"|Date=="2016-06-16"|Date=="2016-07-16"|Date=="2016-08-16"|Date=="2016-09-16") %>% group_by(Year)
 
+#4. adding in sightings data
+turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
+pla=readShapeSpatial("/Volumes/SeaGate/BREP/BREP/spatial_files_for_figures/loggerhead.shp")
+sightings=scb.cc.xpts
+coordinates(sightings)=~lon+lat
+pla_sightings=raster::intersect(sightings,pla)
+pla_sightings@data$lat=pla_sightings@coords[,2]
+pla_sightings@data$lon=pla_sightings@coords[,1]
+pla_sightings=pla_sightings@data
+pla_sightings=pla_sightings %>% dplyr::rename(Date=dtime) 
+pla_sightings=pla_sightings%>% dplyr::select(Date,ptt)%>%mutate(ptt=1)
+pla_sightings$dt=strtrim(as.character(pla_sightings$Date),8)
+pla_sightings$dt=as.Date(paste0(pla_sightings$dt,"16"))
+pla_sightings$Date=pla_sightings$dt
 
-## ------------------------------------> Table 1  ####
+turtles=left_join(pla_sightings,master) %>% filter(Date>"2002-12-31") %>% group_by(Date) %>% summarise(sum=sum(ptt)) %>% .[2:6,] %>% left_join(.,master)
+
+# make some plots
+plot=ggplot()+geom_line(data=master,aes(x=Date,y=Ruling,color="Indicator minus threshold"),size=.5)
+plot=plot+geom_line(data=closures,aes(x=Date,y=Ruling,color="Closure periods",group=Year),size=1)
+plot=plot+geom_point(data=turtles,aes(x=Date,y=Ruling,color="Turtle sightings"),size=1)
+plot=plot+geom_line(data=master,aes(x=Date,y=Zero),color="red")
+plot=plot+ggtitle("Pelagic SST box based indicator")+labs(x="Date")+labs(y="Indicator minus threshold (C)")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
+plot=plot+scale_color_manual("",values=c("Indicator minus threshold"="black","Closure periods"="azure4","Turtle sightings"="blue"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2),"blank"),shape=c(rep(NA,2),16),size=c(1,.5,1))))+theme(legend.key.size = unit(.5,'lines'))
+plot=plot+theme(legend.position=c(.2,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
+plot
+
+png("/Volumes/SeaGate/BREP/manuscript/figures.01.19.2018/fig5.png",width=7, height=5, units="in", res=400)
+par(ps=10)
+par(mar=c(4,4,1,1))
+par(cex=1)
+plot
+dev.off()
+
+## ------------------------------------> Table 1, most correlated SST boxes with turtle sightings  ####
 #rough csvs come from create_rule.R
+#thresholds come from thresholds object in making figure 5
+
+## ------------------------------------> Table 2, hindcast of historical bycatch  ####
+turtle_dat=read.csv("/Volumes/SeaGate/BREP/official_turtleData_Dana/observer.csv")
+turtle_dat=turtle_dat %>% mutate(Date=ymd(paste(turtle_dat$Year,turtle_dat$MM,turtle_dat$DD))) %>% mutate(ym=paste(Year,str_pad(turtle_dat$MM,width=2,side="left",pad=0),"16",sep="-")) %>% mutate(count=1) #%>% group_by(ym) %>% mutate(count=1) %>% summarise(countsum=sum(count))
+turtle_dat=turtle_dat %>% select(Date,ym,count)
+
+#1. read in indicators
+#1a. ENSO indicators, lines 70-124 of figure 2
+enso=contemp
+a=left_join(turtle_dat,enso,by=c("ym"="indicator_date")) %>% select(Date,ym,count,YR,MON,ANOM,one_month_enso=one_month_status,two_three_enso=two_three_status,six_month_enso=six_month_status) 
+
+#1b. local anomaly indicators, lines 202-243 of figure 3
+local=contemp
+local=local%>% select(indicator_date,one_month_local=one_month_status,two_three_local=two_three_status,six_month_local=six_month_status) 
+b=left_join(a,local,by=c("ym"="indicator_date")) %>% arrange(Date)
+
+#1c. pelagic SST box indicator, boxes defined in lines 493- 531 of figure 6
+
+ras_list=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new",full.names = T)%>% grep(".grd",.,value=T) %>% stack()
+names=list.files("/Volumes/SeaGate/BREP/erdPH2sstamday_raster",pattern="new")%>% grep(".grd",.,value=T) %>% gsub("new_mean_","",.) %>% gsub(".grd","",.)
+sst_ob1=raster::extract(ras_list,ob1,fun=mean,na.rm=T,df=T) %>% t()%>% as.data.frame() %>% dplyr::rename(Temperature=V1) %>% slice(-1) %>% as.data.frame() %>%  dplyr::mutate(Date=names) %>% mutate(box="OB")
+sst_wb1=raster::extract(ras_list,wb1,fun=mean,na.rm=T,df=T) %>% t()%>% as.data.frame() %>% dplyr::rename(Temperature=V1) %>% slice(-1) %>% as.data.frame() %>%  dplyr::mutate(Date=names) %>% mutate(box="WB")
+sst_jas=raster::extract(ras_list,jas,fun=mean,na.rm=T,df=T) %>% t()%>% as.data.frame() %>% dplyr::rename(Temperature=V1) %>% slice(-1) %>% as.data.frame() %>%  dplyr::mutate(Date=names) %>% mutate(box="JAS")
+
+pelagic=do.call("rbind",list(sst_ob1,sst_wb1,sst_jas))
+pelagic=pelagic %>% mutate(Month=substr(Date,6,7))
+pelagic_wb=pelagic %>% filter((Month=="01" & box=="WB")|(Month=="03" & box=="WB")|(Month=="04" & box=="WB")|(Month=="05" & box=="WB"))
+pelagic_ob=pelagic %>% filter((Month=="02" & box=="OB")|(Month=="06" & box=="OB")|(Month=="09" & box=="OB"))
+pelagic_jas=pelagic %>% filter((Month=="07" & box=="JAS")|(Month=="08" & box=="JAS")|(Month=="10" & box=="JAS")|(Month=="11" & box=="JAS")|(Month=="12" & box=="JAS"))
+
+pelagic=do.call("rbind",list(pelagic_jas,pelagic_ob,pelagic_wb)) %>% mutate(id=paste(box,Month,sep="-"))
+thresholds=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_thresholds.csv") %>% select(mean,id)
+pelagic=left_join(pelagic,thresholds) %>% arrange(Date) %>% mutate(Ruling=Temperature-mean)
+pelagic$status=NA
+
+for(i in 1:nrow(pelagic)){
+  if(pelagic$Ruling[i]<0){pelagic$status[i]="Open"}
+  if(pelagic$Ruling[i]>0){pelagic$status[i]="Closed"}
+}
+
+bycatch_dates=unique(b$ym)
+pelagic=pelagic[2:nrow(pelagic),]
+pelagic$bycatch=bycatch_dates
+pelagic=pelagic %>% select(status,bycatch)
+
+master=left_join(b,pelagic,by=c("ym"="bycatch")) 
+colnames(master)[13]="pelagic_box"
+write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/bycatch_hindcast.csv")
 
 ## ------------------------------------> Table 2  ####
 #rough csvs come from test_rules_hindcast.01.16.2018.R
