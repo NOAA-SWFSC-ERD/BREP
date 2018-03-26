@@ -706,6 +706,111 @@ master=left_join(b,pelagic,by=c("ym"="bycatch"))
 colnames(master)[13]="pelagic_box"
 write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/bycatch_hindcast.csv")
 
+## ------------------------------------> Table 3, hindcast comparison of indicator utility ####
+master=data.frame("Indicator"=NA, "Alignment"=NA,"Opertunity Cost"=NA, "% sightings aoided"=NA,"% bycatch avoided"=NA)
+#0. alignment with current closures
+#0a. ENSO indicators, lines 70-124 of figure 2
+#enso=contemp
+closures=enso %>% filter(indicator_date=="2014-08-16"|indicator_date=="2015-06-16"|indicator_date=="2015-07-16"|indicator_date=="2015-08-16"|indicator_date=="2016-06-16"|indicator_date=="2016-07-16"|indicator_date=="2016-08-16") 
+master[1:3,1]=c("one_month_enso","two_three_enso","six_month_enso")
+master[1,2]=as.data.frame(table(closures$one_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[2,2]=as.data.frame(table(closures$two_three_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[3,2]=as.data.frame(table(closures$six_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0b. local anomaly indicators, lines 202-243 of figure 3
+#local=contemp
+closures=local %>% filter(indicator_date=="2014-08-16"|indicator_date=="2015-06-16"|indicator_date=="2015-07-16"|indicator_date=="2015-08-16"|indicator_date=="2016-06-16"|indicator_date=="2016-07-16"|indicator_date=="2016-08-16") 
+master[4:6,1]=c("one_month_local","two_three_local","six_month_local")
+master[4,2]=as.data.frame(table(closures$one_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[5,2]=as.data.frame(table(closures$two_three_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[6,2]=as.data.frame(table(closures$six_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0c. pelagic sst box indicator, written out in figure 4
+box=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_indicator.csv") 
+box$Ruling=NA
+box$Status=NA
+for(i in 1:(nrow(box)-1)){
+  box$Ruling[i+1]=(box$Temperature[i]-box$Threshold[i])
+  if (box$Ruling[i+1]<0){box$Status[i+1]="Open"}
+  if (box$Ruling[i+1]>0){box$Status[i+1]="Closed"}
+}
+
+box=box[complete.cases(box),]%>% mutate(Zero=0)
+closures=box %>% filter(Date=="2014-08-16"|Date=="2015-06-16"|Date=="2015-07-16"|Date=="2015-08-16"|Date=="2016-06-16"|Date=="2016-07-16"|Date=="2016-08-16") %>% group_by(Year)
+master[7,1]=c("pelagic_SST")
+master[7,2]=as.data.frame(table(closures$Status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#1. operturnity cost 2003-2007
+#0a. ENSO indicators, lines 70-124 of figure 2
+#enso=contemp
+closures=enso %>% filter(indicator_date>2003)
+master[1,3]=as.data.frame(table(closures$one_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[2,3]=as.data.frame(table(closures$two_three_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[3,3]=as.data.frame(table(closures$six_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0b. local anomaly indicators, lines 202-243 of figure 3
+#local=contemp
+closures=local %>% filter(indicator_date>2003)
+master[4,3]=as.data.frame(table(closures$one_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[5,3]=as.data.frame(table(closures$two_three_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[6,3]=as.data.frame(table(closures$six_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0c. pelagic sst box indicator, written out in figure 4
+closures=box %>% filter(Year>2002)
+master[7,3]=as.data.frame(table(closures$Status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#2. % sightings avoided
+pla_sightings=pla_sightings %>% filter(Date>"2015-01-01") ## from lines 623-636 figure 6
+pla_sightings=pla_sightings %>% mutate(indicator_date=as.character(Date))
+
+#0a. ENSO indicators, lines 70-124 of figure 2
+closures=left_join(pla_sightings,enso)
+master[1,4]=as.data.frame(table(closures$one_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[2,4]=as.data.frame(table(closures$two_three_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[3,4]=as.data.frame(table(closures$six_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0b. local anomaly indicators, lines 202-243 of figure 3
+closures=left_join(pla_sightings,local)
+master[4,4]=as.data.frame(table(closures$one_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[5,4]=as.data.frame(table(closures$two_three_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[6,4]=as.data.frame(table(closures$six_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0c. pelagic sst box indicator, written out in figure 4
+box=box %>% mutate(indicator_date=as.character(Date))
+closures=left_join(pla_sightings,box,by="indicator_date")
+master[7,4]=as.data.frame(table(closures$Status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#3. % of historical bycatch avoided ##--> 662-664 of table 2
+#1a. ENSO indicators, lines 70-124 of figure 2
+closures=left_join(turtle_dat,enso,by=c("ym"="indicator_date")) #%>% select(Date,ym,count,YR,MON,ANOM,one_month_enso=one_month_status,two_three_enso=two_three_status,six_month_enso=six_month_status) 
+master[1,5]=as.data.frame(table(closures$one_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[2,5]=as.data.frame(table(closures$two_three_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[3,5]=as.data.frame(table(closures$six_month_status))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#1b. local anomaly indicators, lines 202-243 of figure 3
+closures=left_join(turtle_dat,local,by=c("ym"="indicator_date")) %>% arrange(Date)
+master[4,5]=as.data.frame(table(closures$one_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[5,5]=as.data.frame(table(closures$two_three_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+master[6,5]=as.data.frame(table(closures$six_month_local))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+#0c. pelagic sst box indicator, written out in figure 4 ##---> from table 2
+closures=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/bycatch_hindcast.csv")
+master[7,5]=as.data.frame(table(closures$pelagic_box))%>%.[.$Var1=="Closed",]%>%.[1,2]
+
+## column totals
+master[8,1]="Totals"
+# alignment
+master[8,2]=7
+# opertunity cost
+closures=box %>% filter(Year>2002) %>% nrow()
+master[8,3]=closures
+#pla sightings
+master[8,4]=nrow(pla_sightings)
+#bycatch avoided
+master[8,5]=nrow(turtle_dat)
+
+write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/hindcast_eval_all_indicators.csv")
+
 ## ------------------------------------> Table 2  ####
 #rough csvs come from test_rules_hindcast.01.16.2018.R
 #write_csv(mod_lenient_wENSO,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_wENSO.csv")
