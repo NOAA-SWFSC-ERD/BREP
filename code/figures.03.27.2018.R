@@ -193,18 +193,18 @@ contemp=contemp %>% filter(YR>2002) %>% dplyr::mutate(indicator_date=as.Date(ind
 closures=contemp %>% filter(indicator_date=="2014-08-16"|indicator_date=="2014-09-16"|indicator_date=="2015-06-16"|indicator_date=="2015-07-16"|indicator_date=="2015-08-16"|indicator_date=="2015-09-16"|indicator_date=="2016-06-16"|indicator_date=="2016-07-16"|indicator_date=="2016-08-16"|indicator_date=="2016-09-16") %>% group_by(YR)
 
 plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=ANOM,color="El Niño anomalies"),size=.5)
-plot=plot+geom_line(data=closures,aes(x=indicator_date,y=ANOM,group=YR,color="Closures periods"),size=1)
+plot=plot+geom_line(data=closures,aes(x=indicator_date,y=ANOM,group=YR,color="Closures periods"),size=2)
 plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=one_month,color="1 month threshold"),size=.5)
 plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=two_three,color="2-3 months threshold"),size=.5)
 plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=six_month,color="6 month threshold"),size=.5)
 plot=plot+ggtitle("A.")+labs(x="Date")+labs(y="El Niño 3.4 anomalies")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
-plot=plot+scale_color_manual("",values=c("El Niño anomalies"="black","1 month threshold"="red","2-3 months threshold"="blue","6 month threshold"="green","Closures periods"="azure4"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",5))))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,.5,.5,1,.5)))) +theme(legend.key.size = unit(.5,'lines'))
+plot=plot+scale_color_manual("",values=c("El Niño anomalies"="black","1 month threshold"="red","2-3 months threshold"="blue","6 month threshold"="green","Closures periods"="azure4"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",5))))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,.5,.5,2,.5)))) +theme(legend.key.size = unit(.5,'lines'))
 plot=plot+theme(legend.position=c(.3,1.1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
 plot1=plot
 plot1
   
 plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=one_month_value,color="timeseries"))
-plot=plot+geom_line(data=closures,aes(x=indicator_date,y=one_month_value,group=YR,color="Closures periods"),size=1)
+plot=plot+geom_line(data=closures,aes(x=indicator_date,y=one_month_value,group=YR,color="Closures periods"),size=2)
 plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=one_month,color="threshold"))
 plot=plot+ggtitle("B.")+labs(x="Date")+labs(y="Average of one month prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
 plot=plot+scale_color_manual("",values=c("timeseries"="black","threshold"="red","Closures periods"="azure4"))
@@ -213,7 +213,7 @@ plot2=plot
 plot2
 
 plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=two_three_value,color="timeseries"))
-plot=plot+geom_line(data=closures,aes(x=indicator_date,y=two_three_value,group=YR,color="Closures periods"),size=1)
+plot=plot+geom_line(data=closures,aes(x=indicator_date,y=two_three_value,group=YR,color="Closures periods"),size=2)
 plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=two_three,color="threshold"))
 plot=plot+ggtitle("C.")+labs(x="Date")+labs(y="Average of two and three months prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
 plot=plot+scale_color_manual("",values=c("timeseries"="black","threshold"="blue","Closures periods"="azure4"))
@@ -222,7 +222,7 @@ plot3=plot
 plot3
 
 plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=six_month_value,color="timeseries"))
-plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closures periods"),size=1)
+plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closures periods"),size=2)
 plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=six_month,color="threshold"))
 plot=plot+ggtitle("D.")+labs(x="Date")+labs(y="Average of six months prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
 plot=plot+scale_color_manual("",values=c("timeseries"="black","threshold"="green","Closures periods"="azure4"))
@@ -230,7 +230,7 @@ plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_t
 plot4=plot
 plot4
 
- png("/Volumes/SeaGate/BREP/manuscript/figures.01.19.2018/fig2.png",width=7, height=5, units="in", res=400)
+ png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/fig2.png",width=7, height=5, units="in", res=400)
  par(ps=10)
  par(mar=c(4,4,1,1))
  par(cex=1)
@@ -312,18 +312,18 @@ plot4
  #closures=contemp %>% filter(indicator_date=="2014-08-16"|indicator_date=="2015-06-16"|indicator_date=="2016-06-16")
  
  plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=ANOM,color="SST anomalies"),size=.5)
- plot=plot+geom_line(data=closures,aes(x=indicator_date,y=ANOM,group=YR,color="Closures periods"),size=1)
+ plot=plot+geom_line(data=closures,aes(x=indicator_date,y=ANOM,group=YR,color="Closures periods"),size=2)
  plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=one_month,color="1 month threshold"),size=.5)
  plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=two_three,color="2-3 months threshold"),size=.5)
  plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=six_month,color="6 month threshold"),size=.5)
  plot=plot+ggtitle("A.")+labs(x="Date")+labs(y="ROMS SST anomalies")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
- plot=plot+scale_color_manual("",values=c("SST anomalies"="black","1 month threshold"="red","2-3 months threshold"="blue","6 month threshold"="green","Closures periods"="azure4"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",5))))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,.5,.5,1,.5)))) +theme(legend.key.size = unit(.5,'lines'))
+ plot=plot+scale_color_manual("",values=c("SST anomalies"="black","1 month threshold"="red","2-3 months threshold"="blue","6 month threshold"="green","Closures periods"="azure4"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",5))))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,.5,.5,2,.5)))) +theme(legend.key.size = unit(.5,'lines'))
  plot=plot+theme(legend.position=c(.3,1.1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
  plot1=plot
  plot1
  
  plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=one_month_value,color="timeseries"))
- plot=plot+geom_line(data=closures,aes(x=indicator_date,y=one_month_value,group=YR,color="Closures periods"),size=1)
+ plot=plot+geom_line(data=closures,aes(x=indicator_date,y=one_month_value,group=YR,color="Closures periods"),size=2)
  plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=one_month,color="threshold"))
  plot=plot+ggtitle("B.")+labs(x="Date")+labs(y="Average of one month prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
  plot=plot+scale_color_manual("",values=c("timeseries"="black","threshold"="red","Closures periods"="azure4"))
@@ -332,7 +332,7 @@ plot4
  plot2
  
  plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=two_three_value,color="timeseries"))+geom_line(data=contemp,aes(x=indicator_date,y=two_three,color="threshold"))
- plot=plot+geom_line(data=closures,aes(x=indicator_date,y=two_three_value,group=YR,color="Closures periods"),size=1)
+ plot=plot+geom_line(data=closures,aes(x=indicator_date,y=two_three_value,group=YR,color="Closures periods"),size=2)
  plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=two_three,color="threshold"))
  plot=plot+ggtitle("C.")+labs(x="Date")+labs(y="Average of two and three months prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
  plot=plot+scale_color_manual("",values=c("timeseries"="black","threshold"="blue","Closures periods"="azure4"))
@@ -341,7 +341,7 @@ plot4
  plot3
  
  plot=ggplot()+geom_line(data=contemp,aes(x=indicator_date,y=six_month_value,color="timeseries"))+geom_line(data=contemp,aes(x=indicator_date,y=six_month,color="threshold"))
- plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closures periods"),size=1)
+ plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closures periods"),size=2)
  plot=plot+geom_line(data=contemp,aes(x=indicator_date,y=six_month,color="threshold"))
  plot=plot+ggtitle("D.")+labs(x="Date")+labs(y="Average of six months prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
  plot=plot+scale_color_manual("",values=c("timeseries"="black","threshold"="green","Closures periods"="azure4"))
@@ -349,7 +349,7 @@ plot4
  plot4=plot
  plot4
  
- png("/Volumes/SeaGate/BREP/manuscript/figures.01.19.2018/fig3.png",width=7, height=5, units="in", res=400)
+ png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/fig3.png",width=7, height=5, units="in", res=400)
  par(ps=10)
  par(mar=c(4,4,1,1))
  par(cex=1)
@@ -672,7 +672,8 @@ thresholds=thresholds %>% mutate(id=paste(box,Month,sep="-"))
 write.csv(thresholds,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_thresholds.csv")
 
 master=left_join(a,thresholds) %>% dplyr::rename(Threshold=mean) %>% select(-id) %>% dplyr::rename(Temperature=anomaly) %>% arrange(Date) %>% .[complete.cases(.),]
-write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_indicator.csv") 
+#write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_indicator.csv") 
+master=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/sst_box_indicator.csv") %>% mutate(Date=as.Date(Date))
 
 #3. negative/positive indicators relative to thresholds, setting values for proceding month
 # need 2002-12-16
@@ -705,15 +706,15 @@ turtles=left_join(pla_sightings,master) %>% filter(Date>"2002-12-31") %>% group_
 
 # make some plots
 plot=ggplot()+geom_line(data=master,aes(x=Date,y=Ruling,color="Indicator minus threshold"),size=.5)
-plot=plot+geom_line(data=closures,aes(x=Date,y=Ruling,color="Closure periods",group=Year),size=1)
-plot=plot+geom_point(data=turtles,aes(x=Date,y=Ruling,color="Turtle sightings"),size=1)
+plot=plot+geom_line(data=closures,aes(x=Date,y=Ruling,color="Closure periods",group=Year),size=2)
+#plot=plot+geom_point(data=turtles,aes(x=Date,y=Ruling,color="Turtle sightings"),size=1)
 plot=plot+geom_line(data=master,aes(x=Date,y=Zero),color="red")
 plot=plot+ggtitle("Pelagic SST box based indicator")+labs(x="Date")+labs(y="Indicator minus threshold (C)")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
-plot=plot+scale_color_manual("",values=c("Indicator minus threshold"="black","Closure periods"="azure4","Turtle sightings"="blue"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2),"blank"),shape=c(rep(NA,2),16),size=c(1,.5,1))))+theme(legend.key.size = unit(.5,'lines'))
+plot=plot+scale_color_manual("",values=c("Indicator minus threshold"="black","Closure periods"="azure4"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2)),size=c(2,.5))))+theme(legend.key.size = unit(.5,'lines'))
 plot=plot+theme(legend.position=c(.2,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
 plot
 
-png("/Volumes/SeaGate/BREP/manuscript/figures.01.19.2018/fig5.png",width=7, height=5, units="in", res=400)
+png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/fig5.png",width=7, height=5, units="in", res=400)
 par(ps=10)
 par(mar=c(4,4,1,1))
 par(cex=1)
