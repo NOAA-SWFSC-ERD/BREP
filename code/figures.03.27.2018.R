@@ -896,16 +896,16 @@ closures=left_join(turtle_dat,combo,by=c("ym"="indicator_date")) %>% arrange(Dat
 master[8,5]=as.data.frame(table(closures$combn))%>%.[.$Var1=="Closed",]%>%.[1,2]
 
 ## column totals
-master[8,1]="Totals"
+master[9,1]="Totals"
 # alignment
-master[8,2]=7
+master[9,2]=7
 # opertunity cost
 closures=box %>% filter(Year>2002) %>% nrow()
-master[8,3]=closures
+master[9,3]=closures
 #pla sightings
-master[8,4]=nrow(pla_sightings)
+master[9,4]=nrow(pla_sightings)
 #bycatch avoided
-master[8,5]=nrow(turtle_dat)
+master[9,5]=nrow(turtle_dat)
 
 write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/hindcast_eval_all_indicators_combo.csv")
 
