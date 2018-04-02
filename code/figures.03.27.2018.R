@@ -910,6 +910,8 @@ master[9,5]=nrow(turtle_dat)
 
 write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/hindcast_eval_all_indicators_combo.csv")
 
+## ------------------------------------> Figure 7: time-series comparison of best indicator and turtle data
+
 ## ------------------------------------> Table 2  ####
 #rough csvs come from test_rules_hindcast.01.16.2018.R
 #write_csv(mod_lenient_wENSO,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/mod_lenient_wENSO.csv")
