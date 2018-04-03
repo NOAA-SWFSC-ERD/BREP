@@ -1130,10 +1130,10 @@ contemp=contemp %>% mutate(date=as.Date(indicator_date))
 # make some plots
 plot=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly,color="ROMS"))
 plot=plot+geom_line(data=a,aes(x=date,y=ANOM,color="CoastWatch"))
-plot=plot+ggtitle("Comparison of ROMS and CoastWatch SST anomaly indicators in the Southern California Bight")+labs(x="Date")+labs(y="SST anomaly")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
+plot=plot+labs(x="Date")+labs(y="SST anomaly")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))#+ggtitle("Comparison of ROMS and CoastWatch SST anomaly indicators in the Southern California Bight")
 plot=plot+scale_color_manual("",values=c("CoastWatch"="red","ROMS"="blue"))+theme(legend.key.size = unit(.5,'lines'))
 plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +theme(legend.position="none")+scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
-plot=plot+theme(legend.position=c(.1,1.1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) 
+plot=plot+theme(legend.position=c(.1,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) 
 plot
 
 png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/figB1.png",width=7, height=5, units="in", res=400)
