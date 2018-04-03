@@ -23,6 +23,7 @@ library(stringr)
 library(DataCombine)
 library(lubridate)
 library(sf)
+library(maps)
 #######
 
 
@@ -357,52 +358,6 @@ plot4
  dev.off()
  
 
-## ------------------------------------>figure 4: Comparison of coastwatch and ROMS sst anomalies (current decision making process) ####
- # working with coast watch data
- scb_coords=matrix(c(-120.3, 30.8,  ## define SST box
-                     -120.3,34.5,
-                     -116,34.5,
-                     -116, 30.8,
-                     -120.3, 30.8),
-                   ncol=2,byrow = T)
- 
- p=Polygon(scb_coords)
- ps=Polygons(list(p),1)
- sps = SpatialPolygons(list(ps))
- proj4string(sps)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
- plot(sps)
- scb=sps
- 
- ras_list=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom",full.names = T) %>% grep(".grd",.,value=T) %>% stack()
- names=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom") %>% grep(".grd",.,value=T) %>% gsub("anom_","",.) %>% gsub(".grd","",.)
- ex_mean=raster::extract(ras_list,scb,fun=mean,na.rm=T,df=T)
- 
- a=t(ex_mean) %>% as.data.frame() %>% .[2:nrow(.),] %>% as.data.frame()%>% mutate(date=as.Date(names)) %>% .[8:nrow(.),] 
- colnames(a)=c("ANOM","date")
- #write.csv(a,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/scb_anom_mean.csv")
-
- # working with ROMS data
- anoms=read.csv("/Volumes/SeaGate/BREP/BREP/roms_anomalies/BREP_historical_SST_anomaly.txt")
- contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS") %>% dplyr::mutate(indicator_date=paste0(Year,"-",Month,"-16"))
- contemp=contemp %>% mutate(date=as.Date(indicator_date))
-
- # make some plots
- plot=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly,color="ROMS"))
- plot=plot+geom_line(data=a,aes(x=date,y=ANOM,color="CoastWatch"))
- plot=plot+ggtitle("Comparison of ROMS and CoastWatch SST anomaly indicators in the Southern California Bight")+labs(x="Date")+labs(y="SST anomaly")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
- plot=plot+scale_color_manual("",values=c("CoastWatch"="red","ROMS"="blue"))+theme(legend.key.size = unit(.5,'lines'))
- plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +theme(legend.position="none")+scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
- plot=plot+theme(legend.position=c(.1,1.1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) 
- plot
- 
- png("/Volumes/SeaGate/BREP/manuscript/figures.01.19.2018/fig4.png",width=7, height=5, units="in", res=400)
- par(ps=10)
- par(mar=c(4,4,1,1))
- par(cex=1)
- plot
- dev.off()
- 
-
 ## ------------------------------------>figure 5: Map of SST indicator boxes ####
 ##### load rasters
 plot_dir="/Volumes/SeaGate/BREP/BREP/priority_plots/"
@@ -721,10 +676,6 @@ par(cex=1)
 plot
 dev.off()
 
-## ------------------------------------> Table 1, most correlated SST boxes with turtle sightings  ####
-#rough csvs come from create_rule.R
-#thresholds come from thresholds object in making figure 5
-
 ## ------------------------------------> Table 2, hindcast of historical bycatch  ####
 turtle_dat=read.csv("/Volumes/SeaGate/BREP/official_turtleData_Dana/observer.csv")
 turtle_dat=turtle_dat %>% mutate(Date=ymd(paste(turtle_dat$Year,turtle_dat$MM,turtle_dat$DD))) %>% mutate(ym=paste(Year,str_pad(turtle_dat$MM,width=2,side="left",pad=0),"16",sep="-")) %>% mutate(count=1) #%>% group_by(ym) %>% mutate(count=1) %>% summarise(countsum=sum(count))
@@ -947,6 +898,7 @@ write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/hindcast_eval_all
 anom=contemp %>% dplyr::select(YR,MON,ANOM,indicator_date,contains("six")) %>% .[complete.cases(.),] %>% mutate(six_month_minus=six_month_value-six_month) %>% mutate(indicator_date=as.Date(indicator_date),zero=0)
 anom$dt=strtrim(as.character(anom$indicator_date),8)
 anom$dt=as.Date(paste0(anom$dt,"16"))
+closures=anom %>% filter(indicator_date=="2014-08-16"|indicator_date=="2014-09-16"|indicator_date=="2015-06-16"|indicator_date=="2015-07-16"|indicator_date=="2015-08-16"|indicator_date=="2015-09-16"|indicator_date=="2016-06-16"|indicator_date=="2016-07-16"|indicator_date=="2016-08-16"|indicator_date=="2016-09-16") %>% group_by(YR)
 
 #2 read in turtle time-series
 turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
@@ -975,15 +927,14 @@ master=left_join(anom,turtles,by="dt") %>% filter(indicator_date>as.Date("1991-1
 
 # make some plots
 plot=ggplot()+geom_line(data=master,aes(x=indicator_date,y=six_month_value,color="SST anomalies"),size=.5)
+plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closure periods"),size=2)
 plot=plot+geom_line(data=master,aes(x=indicator_date,y=six_month,color="6 month threshold"),size=.5)
 plot=plot+geom_point(data=master,aes(x=indicator_date,y=six_month_value,size=count),color="red")#+geom_text(data=master,aes(x=indicator_date,y=six_month_value,label=indicator_date))
 plot=plot+labs(x="Date")+labs(y="Average of six months prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
-plot=plot+scale_color_manual("",values=c("SST anomalies"="black","6 month threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,.5)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=5))
+plot=plot+scale_color_manual("",values=c("Closure periods"="black","SST anomalies"="black","6 month threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",3)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,2,.5)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=5))
 plot=plot+theme(legend.position=c(.2,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
 plot=plot+scale_size_area(name="Turtle data",breaks=c(1,10,50,100),labels=c("One","Ten","50","100"),max_size = 5)+ylim(-1.475,2.3)
-#plot=plot+theme(plot.margin=margin(t = 1, r = .3, b = .3, l = .3, unit = "cm"))
 plot
-
 
 png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/fig7.png",width=7, height=5, units="in", res=400)
 par(ps=10)
@@ -991,6 +942,207 @@ par(mar=c(4,4,1,1))
 par(cex=1)
 plot
 dev.off()
+
+
+
+
+## ------------------------------------> Appendix A - developing the pelagic SST indicator - Fig. A1 correlation maps  ####
+#pngs made in correlation_DF.R
+#ppt in manuscript/raw_figures/Appendix A1.1.ppt
+
+## ------------------------------------> Appendix A - developing the pelagic SST indicator - Fig. A2 Map of SST indicator boxes ####
+##### load rasters
+plot_dir="/Volumes/SeaGate/BREP/BREP/priority_plots/"
+
+jan=raster(paste0(plot_dir,"mean-01-75.grd"))
+feb=raster(paste0(plot_dir,"mean-02-75.grd"))
+mar=raster(paste0(plot_dir,"mean-03-75.grd"))
+apr=raster(paste0(plot_dir,"mean-04-75.grd"))
+may=raster(paste0(plot_dir,"mean-05-75.grd"))
+jun=raster(paste0(plot_dir,"mean-06-75.grd"))
+jul=raster(paste0(plot_dir,"mean-07-75.grd"))
+aug=raster(paste0(plot_dir,"mean-08-75.grd"))
+sep=raster(paste0(plot_dir,"mean-09-75.grd"))
+oct=raster(paste0(plot_dir,"mean-10-75.grd"))
+nov=raster(paste0(plot_dir,"mean-11-75.grd"))
+dec=raster(paste0(plot_dir,"mean-12-75.grd"))
+
+sum_rasJAS=sum(jul,aug,sep)
+## Goals: 1. warning box based on January-May conditions, 2. observation box based on May-July conditions
+sum_rasJFMAM=sum(jan,feb,mar,apr,may)
+sum_rasMJJ=sum(may,jun,jul)
+
+##### warning box (WB) 
+wb1_coords=matrix(c(-120,23,  ## define SST box
+                    -120,27,
+                    -118.5,27,
+                    -118.5,23,
+                    -120,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(wb1_coords)
+ps=Polygons(list(p),1)
+wb1 = SpatialPolygons(list(ps))
+proj4string(wb1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+wb1_df=as.data.frame(fortify(wb1,region="id"))
+
+###### 2. observation box (OB)
+ob1_coords=matrix(c(-124.5,23,  ## define SST box
+                    -124.5,24.25,
+                    -122.5,24.25,
+                    -122.5,23,
+                    -124.5,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(ob1_coords)
+ps=Polygons(list(p),1)
+ob1 = SpatialPolygons(list(ps))
+proj4string(ob1)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+ob1_df=as.data.frame(fortify(ob1,region="id"))
+
+plot(sum_rasMJJ)
+plot(ob1,add=T)
+
+##### D. JAS box 1
+JAS_coords=matrix(c(-135,23,  ## define SST box
+                    -135,25,
+                    -123,25,
+                    -123,23,
+                    -135,23),
+                  ncol=2,byrow = T)
+
+p=Polygon(JAS_coords)
+ps=Polygons(list(p),1)
+sps = SpatialPolygons(list(ps))
+proj4string(sps)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+JAS=as.data.frame(fortify(sps,region="id"))
+
+plot(sum_rasJAS)
+plot(sps,add=T)
+
+##### making figures
+## ------------------------------------> JAS (Pelagic box B)
+test_spdf <- as(sum_rasJAS, "SpatialPixelsDataFrame")
+test_df <- as.data.frame(test_spdf)
+test_df$layer=as.factor(test_df$layer)
+colnames(test_df) <- c("value", "x", "y")
+
+map.US <- map_data(map="state")
+map.world = map_data(map="world")
+
+map=ggplot()+geom_raster(data=test_df,aes(x=x,y=y,group=factor(value),fill=factor(value)))+coord_cartesian()
+map=map+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
+map=map+geom_polygon(data=JAS,aes(long,lat,color="ob1",fill="ob1"),size=1.2)+coord_cartesian()
+map=map+scale_fill_manual(breaks=c("0","1","2","3","4","5"),values=c("ob1"=NA,"ob1"=NA,"world"="grey","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3","4"="darkorange3","5"="cornflowerblue"))+scale_color_manual(breaks="",values=c("ob1"="black"))
+#map=map+scale_fill_manual(breaks=c("0","1","2","3"),values=c("ob1"=NA,"world"="grey","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3","4"="darkorange3"))+scale_color_manual(breaks="",values=c("ob1"="black"))
+map2=map+coord_cartesian(xlim=c(-140,-115),ylim=c(18,42),expand=F)+scale_y_continuous(expand = c(18,42))+scale_x_continuous(expand = c(-140,-115))
+map2=map2+theme(panel.background = element_blank())+ theme(panel.border = element_rect(colour = "black",fill=NA))+ggtitle("Pelagic box B")+theme(plot.title = element_text(size = 10, face = "bold"))
+map2=map2+guides(fill=guide_legend(title="Persistence (months)"))+theme(legend.title = element_text(size=8),legend.position=c(.95,.95),legend.justification = c(.9,.9))+theme(legend.text=element_text(size=8))
+map2=map2 + theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))+ theme(legend.title=element_text(size=5))+theme(legend.text=element_text(size=5))+theme(legend.key.size = unit(.5,'lines'))
+map3=map2+theme(plot.margin = margin(t = 0, r = .5, b = 0, l = 0, unit = "cm"))
+boxB=map3
+boxB
+
+## ------------------------------------> OB (Pelagic box C)
+test_spdf <- as(sum_rasMJJ, "SpatialPixelsDataFrame")
+test_df <- as.data.frame(test_spdf)
+test_df$layer=as.factor(test_df$layer)
+colnames(test_df) <- c("value", "x", "y")
+
+map.US <- map_data(map="state")
+map.world = map_data(map="world")
+
+map=ggplot()+geom_raster(data=test_df,aes(x=x,y=y,group=factor(value),fill=factor(value)))+coord_cartesian()
+map=map+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
+map=map+geom_polygon(data=ob1_df,aes(long,lat,color="ob1",fill="ob1"),size=1.2)+coord_cartesian()
+map=map+scale_fill_manual(breaks=c("0","1","2","3","4","5"),values=c("ob1"=NA,"ob1"=NA,"world"="grey","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3","4"="darkorange3","5"="cornflowerblue"))+scale_color_manual(breaks="",values=c("ob1"="black"))
+#map=map+scale_fill_manual(breaks=c("0","1","2"),values=c("ob1"=NA,"world"="grey","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3"))+scale_color_manual(breaks="",values=c("ob1"="black"))
+map2=map+coord_cartesian(xlim=c(-140,-115),ylim=c(18,42),expand=F)+scale_y_continuous(expand = c(18,42))+scale_x_continuous(expand = c(-140,-115))
+map2=map2+theme(panel.background = element_blank())+ theme(panel.border = element_rect(colour = "black",fill=NA))+ggtitle("Pelagic box C")+theme(plot.title = element_text(size = 10, face = "bold"))
+map2=map2+guides(fill=guide_legend(title="Persistence (months)"))+theme(legend.title = element_text(size=8),legend.position=c(.95,.95),legend.justification = c(.9,.9))+theme(legend.text=element_text(size=8))
+map2=map2 + theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))+ theme(legend.title=element_text(size=5))+theme(legend.text=element_text(size=5))+theme(legend.key.size = unit(.5,'lines'))
+map3=map2+theme(plot.margin = margin(t = 0, r = .5, b = 0, l = 0, unit = "cm"))
+boxC=map3
+boxC
+
+## ------------------------------------> WB (Pelagic box D) 
+test_spdf <- as(sum_rasJFMAM, "SpatialPixelsDataFrame")
+test_df <- as.data.frame(test_spdf)
+test_df$layer=as.factor(test_df$layer)
+colnames(test_df) <- c("value", "x", "y")
+
+map.US <- map_data(map="state")
+map.world = map_data(map="world")
+
+map=ggplot()+geom_raster(data=test_df,aes(x=x,y=y,group=factor(value),fill=factor(value)))+coord_cartesian()
+map=map+geom_map(data=map.world,map=map.world,aes(map_id=region,x=long,y=lat,fill="world"))+coord_cartesian()
+map=map+geom_polygon(data=wb1_df,aes(long,lat,color="wb1",fill="wb1"),size=1.2)+coord_cartesian()
+map=map+scale_fill_manual(breaks=c("0","1","2","3","4","5"),values=c("wb2"=NA,"wb1"=NA,"world"="grey","grey"="grey","0"="gray87","1"="antiquewhite2","2"="darkgoldenrod","3"="darkolivegreen3","4"="darkorange3","5"="cornflowerblue"))+scale_color_manual(breaks="",values=c("wb2"="dodgerblue4","wb1"="black"))
+map2=map+coord_cartesian(xlim=c(-140,-115),ylim=c(18,42),expand=F)+scale_y_continuous(expand = c(18,42))+scale_x_continuous(expand = c(-140,-115))
+map2=map2+theme(panel.background = element_blank())+ theme(panel.border = element_rect(colour = "black",fill=NA))+ggtitle("Pelagic box D")+theme(plot.title = element_text(size = 10, face = "bold"))
+map2=map2+guides(fill=guide_legend(title="Persistence (months)"))+theme(legend.title = element_text(size=8),legend.position=c(.95,.95),legend.justification = c(.9,.9))+theme(legend.text=element_text(size=8))
+map2=map2 + theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))+ theme(legend.title=element_text(size=5))+theme(legend.text=element_text(size=5))+theme(legend.key.size = unit(.5,'lines'))
+map3=map2+theme(plot.margin = margin(t = 0, r = .5, b = 0, l = 0, unit = "cm"))
+boxD=map3
+
+png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/figA2.png",width=15, height=4, units="in", res=400)
+par(ps=10)
+par(mar=c(4,4,1,1))
+par(cex=1)
+plot_grid(boxB,boxC,boxD,ncol = 3,nrow = 1)
+dev.off()
+
+
+## ------------------------------------> Appendix A - developing the pelagic SST indicator - Table A1, most correlated SST boxes with turtle sightings  ####
+#rough csvs come from create_rule.R
+#thresholds come from thresholds object in making figure 5
+
+## ------------------------------------> Appendix B - Fig. B1 Comparison of coastwatch and ROMS sst anomalies (current decision making process) ####
+# working with coast watch data
+scb_coords=matrix(c(-120.3, 30.8,  ## define SST box
+                    -120.3,34.5,
+                    -116,34.5,
+                    -116, 30.8,
+                    -120.3, 30.8),
+                  ncol=2,byrow = T)
+
+p=Polygon(scb_coords)
+ps=Polygons(list(p),1)
+sps = SpatialPolygons(list(ps))
+proj4string(sps)=CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+plot(sps)
+scb=sps
+
+ras_list=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom",full.names = T) %>% grep(".grd",.,value=T) %>% stack()
+names=list.files("/Volumes/SeaGate/BREP/jplmur_raster",pattern = "anom") %>% grep(".grd",.,value=T) %>% gsub("anom_","",.) %>% gsub(".grd","",.)
+ex_mean=raster::extract(ras_list,scb,fun=mean,na.rm=T,df=T)
+
+a=t(ex_mean) %>% as.data.frame() %>% .[2:nrow(.),] %>% as.data.frame()%>% mutate(date=as.Date(names)) %>% .[8:nrow(.),] 
+colnames(a)=c("ANOM","date")
+#write.csv(a,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/scb_anom_mean.csv")
+a=read.csv("/Volumes/SeaGate/BREP/BREP/set_in_indicators/scb_anom_mean.csv") %>% mutate(date=as.Date(date))
+
+# working with ROMS data
+anoms=read.csv("/Volumes/SeaGate/BREP/BREP/roms_anomalies/BREP_historical_SST_anomaly.txt")
+contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS") %>% dplyr::mutate(indicator_date=paste0(Year,"-",Month,"-16"))
+contemp=contemp %>% mutate(date=as.Date(indicator_date))
+
+# make some plots
+plot=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly,color="ROMS"))
+plot=plot+geom_line(data=a,aes(x=date,y=ANOM,color="CoastWatch"))
+plot=plot+ggtitle("Comparison of ROMS and CoastWatch SST anomaly indicators in the Southern California Bight")+labs(x="Date")+labs(y="SST anomaly")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
+plot=plot+scale_color_manual("",values=c("CoastWatch"="red","ROMS"="blue"))+theme(legend.key.size = unit(.5,'lines'))
+plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +theme(legend.position="none")+scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
+plot=plot+theme(legend.position=c(.1,1.1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) 
+plot
+
+png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/figB1.png",width=7, height=5, units="in", res=400)
+par(ps=10)
+par(mar=c(4,4,1,1))
+par(cex=1)
+plot
+dev.off()
+
 
 ## ------------------------------------> Table 2  ####
 #rough csvs come from test_rules_hindcast.01.16.2018.R
