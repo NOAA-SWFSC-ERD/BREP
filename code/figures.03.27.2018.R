@@ -910,7 +910,87 @@ master[9,5]=nrow(turtle_dat)
 
 write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/hindcast_eval_all_indicators_combo.csv")
 
-## ------------------------------------> Figure 7: time-series comparison of best indicator and turtle data
+## ------------------------------------> Figure 7: time-series comparison of best indicator and turtle data ####
+## old attempt
+# #1 read in 6 month sst anomaly indicator, lines 202-243 of figure 3
+# anom=contemp %>% dplyr::select(YR,MON,ANOM,indicator_date,contains("six")) %>% .[complete.cases(.),] %>% mutate(six_month_minus=six_month_value-six_month) %>% mutate(indicator_date=as.Date(indicator_date),zero=0)
+# anom$dt=strtrim(as.character(anom$indicator_date),8)
+# anom$dt=as.Date(paste0(anom$dt,"16"))
+# 
+# #2 read in turtle time-series
+# turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
+# turtles=scb.cc.xpts
+# turtles$dt=strtrim(as.character(turtles$dtime),8)
+# turtles$dt=as.Date(paste0(turtles$dt,"16"))
+# a=turtles %>% group_by(dt) %>% dplyr::summarise(count=n())
+# turtles=a #%>% mutate(normalized=log(count))
+# 
+# master=left_join(anom,turtles,by="dt") %>% filter(indicator_date>as.Date("1991-12-16"))
+# master[is.na(master)]<-0
+# #master=master %>% mutate(normalized=0+(max(anom$six_month_minus)-0)*(count-0)/(199-0))
+# 
+# par(mar = c(5,5,2,5))
+# with(master, plot(indicator_date,six_month_value,  type="l", col="red3", 
+#              ylab="Average six months"
+#              ))
+# 
+# par(new = T)
+# with(master, plot(indicator_date, count,type="l", axes=F, xlab=NA, ylab=NA, cex=1.2))
+# axis(side = 4)
+# mtext(side = 4, line = 3, 'Turtle count')
+# legend("topleft",
+#        legend=c(expression(-log[10](italic(p))), "N genes"),
+#        lty=c(1,0), pch=c(NA, 16), col=c("red3", "black"))
+
+## old attempt
+#1 read in 6 month sst anomaly indicator, lines 202-243 of figure 3
+anom=contemp %>% dplyr::select(YR,MON,ANOM,indicator_date,contains("six")) %>% .[complete.cases(.),] %>% mutate(six_month_minus=six_month_value-six_month) %>% mutate(indicator_date=as.Date(indicator_date),zero=0)
+anom$dt=strtrim(as.character(anom$indicator_date),8)
+anom$dt=as.Date(paste0(anom$dt,"16"))
+
+#2 read in turtle time-series
+turtdata=load("/Volumes/SeaGate/BREP/BREP/brep_scb_CC_pts_enso34.RData")
+pla=readShapeSpatial("/Volumes/SeaGate/BREP/BREP/spatial_files_for_figures/loggerhead.shp")
+turtles=scb.cc.xpts
+turtles$dt=strtrim(as.character(turtles$dtime),8)
+turtles$dt=as.Date(paste0(turtles$dt,"16"))
+
+coordinates(turtles)=~lon+lat
+pla_sightings=raster::intersect(sightings,pla)
+pla_sightings@data$lat=pla_sightings@coords[,2]
+pla_sightings@data$lon=pla_sightings@coords[,1]
+pla_sightings=pla_sightings@data
+pla_sightings=pla_sightings %>% dplyr::rename(Date=dtime) 
+pla_sightings=pla_sightings%>% dplyr::select(Date,ptt)%>%mutate(ptt=1)
+pla_sightings$dt=strtrim(as.character(pla_sightings$Date),8)
+pla_sightings$dt=as.Date(paste0(pla_sightings$dt,"16"))
+pla_sightings$Date=pla_sightings$dt
+
+a=pla_sightings %>% group_by(dt) %>% dplyr::summarise(count=n())
+turtles=a #%>% mutate(normalized=1+(max(anom$six_month_minus)-1)*(count-1)/(199-1))
+
+master=left_join(anom,turtles,by="dt") %>% filter(indicator_date>as.Date("1991-12-16"))
+#master[is.na(master)]<-0
+#master=master %>% mutate(normalized=0+(max(anom$six_month_minus)-0)*(count-0)/(199-0))
+
+# make some plots
+plot=ggplot()+geom_line(data=master,aes(x=indicator_date,y=six_month_value,color="SST anomalies"),size=.5)
+plot=plot+geom_line(data=master,aes(x=indicator_date,y=six_month,color="6 month threshold"),size=.5)
+plot=plot+geom_point(data=master,aes(x=indicator_date,y=six_month_value,size=count),color="red")#+geom_text(data=master,aes(x=indicator_date,y=six_month_value,label=indicator_date))
+plot=plot+labs(x="Date")+labs(y="Average of six months prior to closures indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
+plot=plot+scale_color_manual("",values=c("SST anomalies"="black","6 month threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(.5,.5)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=5))
+plot=plot+theme(legend.position=c(.2,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
+plot=plot+scale_size_area(name="Turtle data",breaks=c(1,10,50,100),labels=c("One","Ten","50","100"),max_size = 5)+ylim(-1.475,2.3)
+#plot=plot+theme(plot.margin=margin(t = 1, r = .3, b = .3, l = .3, unit = "cm"))
+plot
+
+
+png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/fig7.png",width=7, height=5, units="in", res=400)
+par(ps=10)
+par(mar=c(4,4,1,1))
+par(cex=1)
+plot
+dev.off()
 
 ## ------------------------------------> Table 2  ####
 #rough csvs come from test_rules_hindcast.01.16.2018.R
