@@ -664,12 +664,12 @@ plot=ggplot()+geom_line(data=master,aes(x=Date,y=Ruling,color="Indicator minus t
 plot=plot+geom_line(data=closures,aes(x=Date,y=Ruling,color="Closure periods",group=Year),size=2)
 #plot=plot+geom_point(data=turtles,aes(x=Date,y=Ruling,color="Turtle sightings"),size=1)
 plot=plot+geom_line(data=master,aes(x=Date,y=Zero),color="red")
-plot=plot+ggtitle("Pelagic SST box based indicator")+labs(x="Date")+labs(y="Indicator minus threshold (C)")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
+plot=plot+labs(x="Date")+labs(y="Pelagic SST indicator minus threshold")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=5),axis.title = element_text(size=5),plot.title = element_text(size=5))
 plot=plot+scale_color_manual("",values=c("Indicator minus threshold"="black","Closure periods"="black"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2)),size=c(2,.5))))+theme(legend.key.size = unit(.5,'lines'))
 plot=plot+theme(legend.position=c(.2,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0))
 plot
 
-png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/fig5.png",width=7, height=5, units="in", res=400)
+png("/Volumes/SeaGate/BREP/manuscript/figures.06.05.18/fig5.png",width=7, height=5, units="in", res=400)
 par(ps=10)
 par(mar=c(4,4,1,1))
 par(cex=1)
