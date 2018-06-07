@@ -1226,7 +1226,7 @@ plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_t
 plot=plot+theme(legend.position=c(.1,1),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=5))+ theme(legend.key=element_blank()) 
 plot
 
-png("/Volumes/SeaGate/BREP/manuscript/figures.01.27.2018/figB1.png",width=7, height=5, units="in", res=400)
+png("/Volumes/SeaGate/BREP/manuscript/figures.06.05.18/figB1.png",width=7, height=5, units="in", res=400)
 par(ps=10)
 par(mar=c(4,4,1,1))
 par(cex=1)
