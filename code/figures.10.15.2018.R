@@ -671,11 +671,12 @@ turtles=left_join(pla_sightings,master) %>% filter(Date>"2002-12-31") %>% group_
 plot=ggplot()+geom_line(data=master,aes(x=Date,y=Ruling,color="Indicator minus threshold"),size=1)
 plot=plot+geom_line(data=closures,aes(x=Date,y=Ruling,color="Closure periods",group=Year),size=3)
 plot=plot+geom_line(data=master,aes(x=Date,y=Zero),color="red",size=1)
-plot=plot+labs(x="Date")+labs(y="Pelagic SST indicator minus threshold")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=11),axis.title = element_text(size=11),plot.title = element_text(size=11))
-plot=plot+scale_color_manual("",values=c("Indicator minus threshold"="black","Closure periods"="black"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2)),size=c(2,.5))))+theme(legend.key.size = unit(.5,'lines'))
-plot=plot+theme(legend.position=c(.3,1.07),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=11))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('2003-01-01','2017-01-01')))
+plot=plot+labs(x="Date")+labs(y="Pelagic SST indicator minus threshold")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=14),axis.title = element_text(size=14),plot.title = element_text(size=14))
+plot=plot+scale_color_manual("",values=c("Indicator minus threshold"="black","Closure periods"="black"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",2)),size=c(3,1))))+theme(legend.key.size = unit(.5,'lines'))
+plot=plot+theme(legend.position=c(.4,1.09),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=14))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('2003-01-01','2017-01-01')))
 plot=plot+theme(axis.text.x = element_text(angle = 45,vjust=0.6),plot.title = element_text(size=6,hjust=0))
-plot=plot+theme(plot.margin = margin(10, 10, 0, 0, "pt"))
+plot=plot+theme(plot.margin = margin(10, 15, 0, 0, "pt"))
+plot=plot+theme(axis.line.x = element_line(colour = 'black', size = 1),axis.line.y = element_line(colour = 'black', size = 1))
 plot
 
 png("/Volumes/SeaGate/BREP/manuscript/figures.10.15.18/fig5.png",width=7, height=5, units="in", res=400)
@@ -994,6 +995,45 @@ write.csv(master,"/Volumes/SeaGate/BREP/BREP/set_in_indicators/hindcast_eval_all
 
 ## old attempt
 #1 read in 6 month sst anomaly indicator, lines 202-243 of figure 3
+contemp=anoms
+contemp$Month=str_pad(contemp$Month,2,pad="0")
+mean_anom_1month=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-07"|date=="2015-05"|date=="2016-05") %>% summarise(mean=min(SST_Anomaly)) %>% .[1,1] ## 1 month preceding closures
+mean_anom_23=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-05"|date=="2014-06"|date=="2015-03"|date=="2015-04"|date=="2016-03"|date=="2016-04") %>% summarise(mean=min(SST_Anomaly))%>% .[1,1] ## months preceeding closures, 2nd and 3rd month as in registrar
+mean_anom_6month=contemp %>% mutate(date=paste0(Year,"-",Month)) %>% filter(date=="2014-02"|date=="2014-03"|date=="2014-04"|date=="2014-05"|date=="2014-06"|date=="2014-07"|date=="2014-12"|date=="2015-01"|date=="2015-02"|date=="2015-03"|date=="2015-04"|date=="2015-05"|date=="2015-12"|date=="2016-01"|date=="2016-02"|date=="2016-03"|date=="2016-04"|date=="2016-05")%>% summarise(mean=min(SST_Anomaly))%>% .[1,1] ## 6 months preceding closures
+
+contemp=contemp %>% dplyr::select(YR=Year,MON=Month,ANOM=SST_Anomaly)  #
+contemp=contemp %>% dplyr::mutate(indicator_date=paste0(YR,"-",MON,"-16"))
+
+contemp$one_month= mean_anom_1month
+contemp$two_three= mean_anom_23
+contemp$six_month= mean_anom_6month
+contemp$one_month_value=NA
+contemp$two_three_value=NA
+contemp$six_month_value=NA 
+contemp$one_month_status=NA
+contemp$two_three_status=NA
+contemp$six_month_status=NA 
+
+# c. calc closure status
+for(i in 7:nrow(contemp)){
+  one_month_status=contemp$ANOM[i-1]
+  two_three_status=mean(c(contemp$ANOM[i-2],contemp$ANOM[i-3]))
+  six_month_status=mean(c(contemp$ANOM[i-1],contemp$ANOM[i-2],contemp$ANOM[i-3],contemp$ANOM[i-4],contemp$ANOM[i-5],contemp$ANOM[i-6]))
+  
+  contemp$one_month_value[i]=one_month_status
+  contemp$two_three_value[i]=two_three_status
+  contemp$six_month_value[i]=six_month_status
+  
+  if(one_month_status>=contemp$one_month[1]){contemp$one_month_status[i]="Closed"}
+  if(one_month_status<contemp$one_month[1]){contemp$one_month_status[i]="Open"}
+  
+  if(two_three_status>=contemp$two_three[1]){contemp$two_three_status[i]="Closed"}
+  if(two_three_status<contemp$two_three[1]){contemp$two_three_status[i]="Open"}
+  
+  if(six_month_status>=contemp$six_month[1]){contemp$six_month_status[i]="Closed"}
+  if(six_month_status<contemp$six_month[1]){contemp$six_month_status[i]="Open"}
+}
+
 anom=contemp %>% dplyr::select(YR,MON,ANOM,indicator_date,contains("six")) %>% .[complete.cases(.),] %>% mutate(six_month_minus=six_month_value-six_month) %>% mutate(indicator_date=as.Date(indicator_date),zero=0)
 anom$dt=strtrim(as.character(anom$indicator_date),8)
 anom$dt=as.Date(paste0(anom$dt,"16"))
@@ -1029,15 +1069,17 @@ plot=ggplot()+geom_line(data=master,aes(x=indicator_date,y=six_month_value,color
 plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closure periods"),size=3)
 plot=plot+geom_line(data=master,aes(x=indicator_date,y=six_month,color="Six-months threshold"),size=1)
 plot=plot+geom_point(data=master,aes(x=indicator_date,y=six_month_value,size=count),color="red")#+geom_text(data=master,aes(x=indicator_date,y=six_month_value,label=indicator_date))
-plot=plot+labs(x="Date")+labs(y="Local SST anomaly indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=10),axis.title = element_text(size=10),plot.title = element_text(size=10))
-plot=plot+scale_size_area(name="Turtle data",breaks=c(1,10,50,100),labels=c("One","Ten","50","100"),max_size = 5)+ylim(-1.475,2.3)
-plot=plot+scale_color_manual("",values=c("Closure periods"="black","SST anomalies"="black","Six-months threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",3)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(2,.5,.5)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=5))
-plot=plot+theme(legend.position=c(.3,1.03),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=10))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0),limits = c(-1.5,2.5))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('1992-01-01','2017-01-01')))
-plot=plot+theme(axis.text.x = element_text(angle = 45,vjust=0.6),plot.title = element_text(size=6,hjust=0),legend.title = element_text(size=10))
-plot=plot+theme(plot.margin = margin(10, 10, 0, 0, "pt"))
+plot=plot+labs(x="Date")+labs(y="Local SST anomaly indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=14),axis.title = element_text(size=14),plot.title = element_text(size=14))
+plot=plot+scale_size_area(name="Turtle data",breaks=c(1,10,30,60),labels=c("One","Ten","50","100"),max_size = 7)+ylim(-1.475,2.3)
+plot=plot+scale_color_manual("",values=c("Closure periods"="black","SST anomalies"="black","Six-months threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",3)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(3,1,1)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=14))
+plot=plot+theme(legend.position=c(.3,1.05),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=14))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0),limits = c(-1.5,2.5))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('1992-01-01','2017-01-01')))
+plot=plot+theme(axis.text.x = element_text(angle = 45,vjust=0.6),plot.title = element_text(size=6,hjust=0),legend.title = element_text(size=14))
+plot=plot+theme(axis.line.x = element_line(colour = 'black', size = 1),axis.line.y = element_line(colour = 'black', size = 1))
+plot=plot+theme(plot.margin = margin(10, 15, 0, 0, "pt"))
+plot=plot+theme(legend.margin=unit(0.3, "lines"))
 plot
 
-png("/Volumes/SeaGate/BREP/manuscript/figures.10.15.18/fig7.png",width=7, height=5, units="in", res=400)
+png("/Volumes/SeaGate/BREP/manuscript/figures.10.15.18/fig7.png",width=9, height=5, units="in", res=400)
 par(ps=10)
 par(mar=c(4,4,1,1))
 par(cex=1)
@@ -1229,13 +1271,14 @@ contemp=filter(anoms,Year>2002) %>% mutate(data="ROMS") %>% dplyr::mutate(indica
 contemp=contemp %>% mutate(date=as.Date(indicator_date))
 
 # make some plots
-plot=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly,color="ROMS"))
-plot=plot+geom_line(data=a,aes(x=date,y=ANOM,color="CoastWatch"))
-plot=plot+labs(x="Date")+labs(y="SST anomaly")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=11),axis.title = element_text(size=11),plot.title = element_text(size=11))#+ggtitle("Comparison of ROMS and CoastWatch SST anomaly indicators in the Southern California Bight")
+plot=ggplot()+geom_line(data=contemp,aes(x=date,y=SST_Anomaly,color="ROMS"),size=1)
+plot=plot+geom_line(data=a,aes(x=date,y=ANOM,color="CoastWatch"),size=1)
+plot=plot+labs(x="Date")+labs(y="SST anomaly (°C)")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=14),axis.title = element_text(size=14),plot.title = element_text(size=14))#+ggtitle("Comparison of ROMS and CoastWatch SST anomaly indicators in the Southern California Bight")
 plot=plot+scale_color_manual("",values=c("CoastWatch"="red","ROMS"="blue"))+theme(legend.key.size = unit(.5,'lines'))
-plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_text(size=11))+ theme(legend.key=element_blank()) +theme(legend.position="none")+scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('2003-01-01','2017-01-01')))
-plot=plot+theme(legend.position=c(.2,1.08),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=11))+ theme(legend.key=element_blank()) 
-plot=plot+theme(axis.text.x = element_text(angle = 45,vjust=0.6),plot.margin = margin(10, 10, 0, 0, "pt"))
+plot=plot+theme(legend.background = element_blank())+theme(legend.text=element_text(size=14))+ theme(legend.key=element_blank()) +theme(legend.position="none")+scale_y_continuous(expand = c(0, 0))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('2003-01-01','2017-01-01')))
+plot=plot+theme(legend.position=c(.22,1.08),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=14))+ theme(legend.key=element_blank()) 
+plot=plot+theme(axis.text.x = element_text(angle = 45,vjust=0.6),plot.margin = margin(10, 15, 0, 0, "pt"))
+plot=plot+theme(axis.line.x = element_line(colour = 'black', size = 1),axis.line.y = element_line(colour = 'black', size = 1))
 plot
 
 png("/Volumes/SeaGate/BREP/manuscript/figures.10.15.18/figB1.png",width=7, height=5, units="in", res=400)
