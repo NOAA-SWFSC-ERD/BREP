@@ -1065,13 +1065,13 @@ master=left_join(anom,turtles,by="dt") %>% filter(indicator_date>as.Date("1991-1
 #master=master %>% mutate(normalized=0+(max(anom$six_month_minus)-0)*(count-0)/(199-0))
 
 # make some plots
-plot=ggplot()+geom_line(data=master,aes(x=indicator_date,y=six_month_value,color="SST anomalies"),size=1)
+plot=ggplot()+geom_line(data=master,aes(x=indicator_date,y=six_month_value,color="SST anomalies"),size=.7)
 plot=plot+geom_line(data=closures,aes(x=indicator_date,y=six_month_value,group=YR,color="Closure periods"),size=3)
 plot=plot+geom_line(data=master,aes(x=indicator_date,y=six_month,color="Six-months threshold"),size=1)
 plot=plot+geom_point(data=master,aes(x=indicator_date,y=six_month_value,size=count),color="red")#+geom_text(data=master,aes(x=indicator_date,y=six_month_value,label=indicator_date))
 plot=plot+labs(x="Date")+labs(y="Local SST anomaly indicator")+theme(panel.background = element_blank())+ theme(axis.line = element_line(colour = "black"))+ theme(axis.text = element_text(size=14),axis.title = element_text(size=14),plot.title = element_text(size=14))
-plot=plot+scale_size_area(name="Turtle data",breaks=c(1,10,30,60),labels=c("One","Ten","50","100"),max_size = 7)+ylim(-1.475,2.3)
-plot=plot+scale_color_manual("",values=c("Closure periods"="black","SST anomalies"="black","Six-months threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",3)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(3,1,1)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=14))
+plot=plot+scale_size_area(name="Turtle data",breaks=c(1,10,30,100),labels=c("One","Ten","50","100"),max_size = 9)+ylim(-1.475,2.3)
+plot=plot+scale_color_manual("",values=c("Closure periods"="black","SST anomalies"="black","Six-months threshold"="green"),guide=guide_legend(override.aes = list(linetype=c(rep("solid",3)),shape=c(NA,NA)))) +  guides(colour = guide_legend(override.aes = list(size=c(3,1,.7)))) +theme(legend.key.size = unit(.5,'lines'))+ theme(legend.title=element_text(size=14))
 plot=plot+theme(legend.position=c(.3,1.05),legend.justification = c(.9,.9))+theme(legend.background = element_blank())+theme(legend.text=element_text(size=14))+ theme(legend.key=element_blank()) +scale_y_continuous(expand = c(0, 0),limits = c(-1.5,2.5))+scale_x_date(date_breaks="year",date_labels = "%Y",date_minor_breaks = "months",expand = c(0,0),limits = as.Date(c('1992-01-01','2017-01-01')))
 plot=plot+theme(axis.text.x = element_text(angle = 45,vjust=0.6),plot.title = element_text(size=6,hjust=0),legend.title = element_text(size=14))
 plot=plot+theme(axis.line.x = element_line(colour = 'black', size = 1),axis.line.y = element_line(colour = 'black', size = 1))
@@ -1079,7 +1079,7 @@ plot=plot+theme(plot.margin = margin(10, 15, 0, 0, "pt"))
 plot=plot+theme(legend.margin=unit(0.3, "lines"))
 plot
 
-png("/Volumes/SeaGate/BREP/manuscript/figures.10.15.18/fig7.png",width=9, height=5, units="in", res=400)
+png("/Volumes/SeaGate/BREP/manuscript/figures.10.15.18/fig7bb.png",width=9, height=5, units="in", res=400)
 par(ps=10)
 par(mar=c(4,4,1,1))
 par(cex=1)
